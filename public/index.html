@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        
+        <title>Hello World Simple App</title>
+    </head>
+		<style>
+			.video-container {
+				/* width is set as 100% here. any width can be specified as per requirement */
+				width: 100%;
+				padding-top: 56.25%;
+				height: 0px;
+				position: relative;
+			}
+			.video {
+				width: 100%;
+				height: 100%;
+				position: absolute;
+				top: 0;
+				left: 0;
+			}
+		</style>
+		
+		<script type="text/javascript" src="./wfs.js"></script>
+		
+		<script type="module">
+			import MP4 from './mp4-generator.js' ;
+			import H264adapter from './h264-adapter.js' ;
+			
+			let socket = null, adapter = null ;
+			let socketBytes = 0 ;
+			let socketBlobs = [] ;
+			
+			let _wfs ;
+			
+			function onWindowResize(ev) {
+				console.log('onWindowResize') ;
+				//console.dir(arguments) ;
+				//setVideoSize() ;
+			}
+			function setVideoSize(ev) {
+				let v = document.getElementById("tag_video");
+				const aspectRatio = (16 / 9) ;
+				console.dir(v) ;
+				
+				let targetHeight = v.offsetWidth / aspectRatio ;
+				v.style.height = targetHeight / 2 ;
+				console.log('setting height to '+targetHeight) ;
+			}
+			function testWs(event) {
+				console.log('testWs') ;
+				return openServiceWfs(null) ;
+			}
+			function openService(serviceId) {
+				const wssAdr = 'wss://10-39-10-209.int.mirabel-sil.com:8080/play' + (serviceId ? '?id='+serviceId : '') ;
+				if( socket == null ) {
+					socket = new WebSocket(wssAdr);
+					socket.binaryType = 'arraybuffer';
+					// Connection opened
+					socket.addEventListener('open', (event) => {
+						console.log('Open WS : '+wssAdr) ;
+						socketBytes = 0 ;
+						socketBlobs = [] ;
+						updateCaption() ;
+					});
+					// Connection closed
+					socket.addEventListener('close', (event) => {
+						console.log('Closing socket !') ;
+						downloadBlob() ;
+						socket = null ;
+						socketBlobs = [] ;
+						updateCaption() ;
+					});
+					// Receiving
+					socket.addEventListener('message', (event) => {
+						//console.dir(event.data) ;
+						socketBytes += event.data.byteLength ;
+						//socketBlobs.push(new Blob(event.data)) ;
+						updateCaption() ;
+						
+						if( adapter ) {
+							adapter.pushH264data(new Uint8Array(event.data)) ;
+						}
+					});
+					
+					adapter = new H264adapter( document.getElementById('tag_video') ) ;
+				} else {
+					closeAll() ;
+				}
+			}
+			function openServiceWfs() {
+				if( _wfs == null ) {
+                _wfs = new Wfs({});
+                _wfs.attachMedia(document.getElementById('tag_video'), 'wss://10-39-10-209.int.mirabel-sil.com:8080/play') ;
+				} else {
+					_wfs.destroy() ;
+					_wfs = null ;
+				}
+			}
+			function closeAll() {
+				socket.close() ;
+				adapter.terminate() ;
+				adapter = null ;
+			}
+			function downloadBlob() {
+				if( socketBlobs.length == 0 ) {
+					return ;
+				}
+				var blob = new Blob(socketBlobs);
+				var url = URL.createObjectURL(blob);
+				var link = document.createElement('a');
+				var filename = 'test.bin' ;
+				link.setAttribute('href', url);
+				link.setAttribute('download', filename);
+				link.style.visibility = 'hidden';
+				document.body.appendChild(link);
+				link.click();
+				document.body.removeChild(link);
+			}
+			function updateCaption() {
+				var str ;
+				if( socket ) {
+					str = 'Socket active, received bytes : ' + socketBytes ;
+				} else {
+					str = 'Socket closed.' ;
+				}
+				document.getElementById('caption').innerHTML = str ;
+			}
+			
+			
+			updateCaption() ;
+			addEventListener('resize', (event) => {
+				onWindowResize(event) ;
+			});
+			//console.dir( MP4.minf(null) ) ;
+			
+			document.getElementById('btn1').addEventListener('click', testWs)
+		</script>
+		<body>
+			<div>
+				<input type="button" value="Button" id='btn1'/>
+				&nbsp;
+				<input type="button" value="Button 2" onclick="testWs(event)" />
+				&nbsp;
+				<input type="button" value="Button 3" onclick="testWs(event)" />
+			</div>
+			<div>
+				<p id='caption'>&nbsp;</p>
+			</div>
+			<hr>
+			<div style='border: 1px solid gray ; padding: 10px ; margin:4px'>
+				<div class="video-container">
+					<video id='tag_video' class="video"  />
+				</div>
+			</div>
+			<div style='text-align:center'>
+				<input type="button" value="Button Fullscreen" onclick="testWs(event)" />
+			</div>
+		</body>
+		<script type="module">
+			import { TEST2 } from './test.js';
+			
+			const test2obj = new TEST2() ;
+			test2obj.doTest2() ;
+			
+			
+		</script>
+</html>
