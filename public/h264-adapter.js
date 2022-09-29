@@ -87,31 +87,26 @@ class H264adapter {
 	
 	pushH264data( uarray ) {
 		const units = this.getH264units(uarray) ;
-// 		if( units.length > 1 ) {
-// 			console.log('mutliple') ;
-// 		}
+		
+		// NOTE 29/09
+		// requirement :
+		// one H264 message = one video frame
+		let nbVCL = 0 ;
 		for( let i=0 ; i<units.length ; i++ ) {
 			const objNalu = units[i] ;
 			if( !this.isH264forwardNAL(objNalu) ) {
 				continue ;
 			}
 			
-			if( true || this.isH264videoframeNAL( objNalu ) ) {
-				this.videoTrack.forwardNals.push({
-					runningTs: this.runningTs,
-					isKey: (objNalu.type==5),
-					data: objNalu.data
-				});
-				if( this.isH264videoframeNAL(objNalu) ) {
-					this.runningTs += this.H264_TIMEBASE ;
-				}
+			this.videoTrack.forwardNals.push({
+				runningTs: this.runningTs,
+				isKey: (objNalu.type==5),
+				data: objNalu.data
+			});
+			if( this.isH264videoframeNAL(objNalu) ) {
+				nbVCL++ ;
 			}
 			
-			if( this.isSourceCreated ) {
-				this.buildMP4segments() ;
-				continue ;
-			}
-		
 			// get datas for init
 			if( !this.isSourceCreated ) {
 				switch( objNalu.type ) {
@@ -128,10 +123,20 @@ class H264adapter {
 				}
 			}
 			if( !this.isSourceCreated && this.videoTrack.pps && this.videoTrack.sps ) {
+				// PPS+SPS now in track
+				// => create source + initialize MP4
+				// ==> stop discarding VCL NAL(s)
+				// ===> so next NAL(s) from same message (IDR...) will be queued
 				this.createSourceBuffer() ;
-				this.buildMP4segments() ;
+				this.buildMP4segments() ; // MOOV
 				continue ;
 			}
+		}
+		if( this.isSourceCreated ) {
+			this.buildMP4segments() ; // MOOF + MDAT
+		}
+		if( nbVCL > 0 ) {
+			this.runningTs += this.H264_TIMEBASE ;
 		}
 	}
 	getH264units( uarray ) {
@@ -193,10 +198,7 @@ class H264adapter {
 				return true ;
 			case 7 :
 			case 8 :
-				if( !this.isSourceCreated ) {
-					return true ;
-				}
-				return false ;
+				return true ;
 			default :
 				return false ;
 		}
@@ -229,7 +231,7 @@ class H264adapter {
               codecstring += h;
             }
             track.codec = codecstring;         
-				console.dir(track) ;
+				//console.dir(track) ;
 				return track ;
 		}
 	}
