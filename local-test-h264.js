@@ -15,14 +15,38 @@ import H264parser from './local-test-h264parser.js';
 
 
 
-const filepath = '/tmp/DJIG0000.h264' ;
-
-
 const filesLibrary = new Map() ;
 filesLibrary.set('DJIG0000',{path: '/tmp/DJIG0000.h264'}) ;
 
 
 async function getDescriptor( title ) {
+	function isVCLfirstSlice(data) {
+		// remove SP
+		if( data[0]==0 && data[1]==0 ) {
+			if( data[2]==1 ) {
+				data = data.subarray(3) ;
+			}
+			if( data[2]==0 && data[3]==1 ) {
+				data = data.subarray(4) ;
+			}
+		}
+		
+		
+		// NAL type 1(NDR) or 5(IDR)
+		const nalType = data[0] & 0x1f ;
+		if( (nalType==1 || nalType==5) ) {
+			
+			// first value for VLC is first_mb_in_slice
+			// ..has to be 0 for first slice
+			// check if first bit is 1 ==> decoded value is 0
+			if( data[1] >> 7 == 1 ) {
+				return true ;
+			}
+		}
+		return false ;
+	}
+	
+	
 	if( !filesLibrary.has(title) ) {
 		return null ;
 	}
@@ -48,8 +72,10 @@ async function getDescriptor( title ) {
 		// console.log( 'found NAL, offset:'+nalOffset+' size:'+nalBuffer.length ) ;
 		
 		
-		
 		var nalDescObj = h264parser.parseNal( H264parser.discardSP(nalBuffer) ) ;
+		if( (nalDescObj.first_mb_in_slice===0) != isVCLfirstSlice(nalBuffer) ) {
+			console.log('error!!') ;
+		}
 		
 		//console.dir(nalBuffer) ;
 		//
