@@ -267,7 +267,7 @@ class H264adapter {
 		if( this.isSourceCreated && !this.isMP4initialized ) {
 			//MP4.init() ;
 			var mp4segment = MP4.initSegment([this.videoTrack]) ;
-			console.dir(mp4segment) ;
+			//console.dir(mp4segment) ;
 			
 			this.MP4segmentsQueue.push( mp4segment ) ;
 			this.tryAppending() ;
@@ -330,8 +330,16 @@ class H264adapter {
 		let moof = MP4.moof(this.MP4sequences, runningTs  , {id:1, samples:[moofObj]});
 		this.MP4sequences++ ;
 		
+		/*
 		this.MP4segmentsQueue.push( moof ) ;
 		this.MP4segmentsQueue.push( mdat ) ;
+		*/
+		
+		const mergedArray = new Uint8Array(moof.length + mdat.length);
+		mergedArray.set(moof);
+		mergedArray.set(mdat, moof.length);
+		this.MP4segmentsQueue.push( mergedArray ) ;
+		
 		this.tryAppending() ;
 	}
 	
