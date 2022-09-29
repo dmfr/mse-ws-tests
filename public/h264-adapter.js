@@ -19,7 +19,7 @@ class H264adapter {
 		this.videoEl.src = URL.createObjectURL(this.mediaSource);
 		this.mediaSource.addEventListener('sourceopen', this.onmso);
 		
-		this.H264_TIMEBASE = 3000;
+		this.H264_TIMEBASE = 2500;
 		
 		this.videoTrack = {
 			type: 'video',
