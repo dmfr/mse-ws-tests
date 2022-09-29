@@ -5,7 +5,7 @@
 class ExpGolomb {
 
   constructor(data) {
-    this.data = data;
+    this.data = this.discardEPB(data);
     // the number of bytes left to examine in this.data
     this.bytesAvailable = this.data.byteLength;
     // the current word being examined
@@ -287,6 +287,60 @@ class ExpGolomb {
     // return slice_type
     return this.readUEG();
   }
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  /**
+   * remove Emulation Prevention bytes from a RBSP
+   */
+  discardEPB(data) {
+    var length = data.byteLength,
+        EPBPositions = [],
+        i = 1,
+        newLength, newData;
+    // Find all `Emulation Prevention Bytes`
+    while (i < length - 2) {
+      if (data[i] === 0 &&
+          data[i + 1] === 0 &&
+          data[i + 2] === 0x03) {
+        EPBPositions.push(i + 2);
+        i += 2;
+      } else {
+        i++;
+      }
+    }
+    // If no Emulation Prevention Bytes were found just return the original
+    // array
+    if (EPBPositions.length === 0) {
+      return data;
+    }
+    // Create a new array to hold the NAL unit data
+    newLength = length - EPBPositions.length;
+    newData = new Uint8Array(newLength);
+    var sourceIndex = 0;
+
+    for (i = 0; i < newLength; sourceIndex++, i++) {
+      if (sourceIndex === EPBPositions[0]) {
+        // Skip this byte
+        sourceIndex++;
+        // Remove this position index
+        EPBPositions.shift();
+      }
+      newData[i] = data[sourceIndex];
+    }
+    return newData;
+  }
+  
 }
 
 export default ExpGolomb;
