@@ -35,7 +35,9 @@ fsPromises.open(filePath).then((fh) => {
 			}
 		})
 	}, 1000/30);
-},()=>{});
+},()=>{
+	console.log("FileNotFound: "+filePath) ;
+});
 
 async function buildFromOffset( fileHandler, offset ) {
 	function isVCLfirstSlice(data) {

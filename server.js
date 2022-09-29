@@ -1,6 +1,7 @@
 import { createServer } from 'https';
 import { readFileSync } from 'fs';
 import { WebSocketServer, WebSocket } from 'ws';
+import { Worker } from "worker_threads" ;
 
 import * as nStatic from "node-static";
 import * as url from "url" ;
@@ -20,7 +21,20 @@ var fileServer = new nStatic.Server('./public');
 //const wss = new WebSocketServer({ server });
 const wss = new WebSocketServer({ noServer: true });
 
-let idx = 0 ;
+
+
+
+
+const arrFilesDesc = [{
+	id: 'DJIG0000',
+	filePath: '/tmp/DJIG0000-30fps-filter.h264'
+},{
+	id: 'MET_YOU_YET',
+	filePath: '/tmp/Michael Bublé - _Haven_t Met You Yet_ [Official Music Video].h264'
+}];
+
+
+
 
 
 
@@ -28,42 +42,53 @@ let idx = 0 ;
 const clients = new Map() ;
 
 wss.on('connection', function connection(ws) {
-	/*
-  ws.on('message', function message(data) {
-    console.log('received: %s', data);
-  });
-	*/
-	if( !ws.targetServiceWs ) {
-		return ws.terminate() ;
-	}
 	
-	const id = uuid.v4();
-	console.log('register client '+id+' for '+services.get(ws.targetServiceWs).id) ;
-	clients.set(ws,{id}) ;
+	const id = uuid.v4() ;
+	let type ;
+	if( ws.targetServiceWs ) {
+		type = 'stream' ;
+		console.log('register client '+id+' for '+services.get(ws.targetServiceWs).id) ;
+		clients.set(ws,{id,type}) ;
+	}
+	if( ws.targetFile ) {
+		type = 'file' ;
+		console.log('register client '+id+' for '+ws.targetFile) ;
+		clients.set(ws,{id,type}) ;
+		
+		const filePath = arrFilesDesc.find(element => element.id==ws.targetFile).filePath ;
+		
+		// setup worker
+		const worker = new Worker("./server-fileworker.js", {workerData:{filePath:filePath}});
+		worker.on("message", function(message){
+			ws.send(message.data) ;
+		});
+		worker.on("error", function(){
+			console.log('error ???') ;
+			ws.terminate() ;
+		});
+		worker.on("exit", (code) => {
+			console.log('finished') ;
+			ws.terminate() ;
+		});
+		ws.targetFileworker = worker ;
+	}
+	if( !type || !clients.get(ws) ) {
+		console.log('!! should not happen !!') ;
+		ws.terminate() ;
+	}
 
 	
 	ws.on('close', function() {
 	  clients.delete(ws) ;
+	  if( ws.targetFileworker ) {
+			ws.targetFileworker.terminate() ;
+	  }
 	  console.log('websocket closed!') ;
 	});
 	ws.on('error', function error() {
 		console.log('error websocket') ;
 		ws.close() ;
 	});
-
-	/*
-	ws.myTimer = setInterval(function(){
-		idx++ ;
-		ws.send('something '+idx);
-	}, 1000);
-  
-  ws.on('close', function() {
-	  if( ws.myTimer ) {
-			clearInterval(ws.myTimer) ;
-	  }
-	  console.log('websocket closed!') ;
-  });
-	*/
 });
 
 server.on('request',function request(request,response) {
@@ -126,6 +151,23 @@ server.on('upgrade', function upgrade(request, socket, head) {
 				wss.emit('connection', ws, request);
 			});
 			break ;
+		case '/replay' :
+			const fileId = (query && query.id) ? query.id : null ;
+			if( !fileId ) {
+				return socket.destroy() ;
+			}
+			console.log('requesting '+fileId) ;
+			if( !arrFilesDesc.find(element => element.id==fileId) ) {
+				console.log('no such file') ;
+				return socket.destroy() ;
+			}
+			
+			//console.dir( query ) ;
+			wss.handleUpgrade(request, socket, head, function done(ws) {
+				ws.targetFile = fileId ;
+				wss.emit('connection', ws, request);
+			});
+			break ;
 		default :
 			socket.destroy() ;
 			break ;
@@ -135,10 +177,11 @@ server.on('upgrade', function upgrade(request, socket, head) {
 
 function cleanupClients() {
 	clients.forEach( function(meta,clientWs) {
-		if( !clientWs.targetServiceWs ) {
+		if( (meta.type=='stream') && !services.has(clientWs.targetServiceWs) ) {
 			clientWs.terminate() ;
 		}
-		if( !services.has(clientWs.targetServiceWs) ) {
+		if( (meta.type=='file') && !clientWs.targetFileworker ) {
+			// ????
 			clientWs.terminate() ;
 		}
 	});
