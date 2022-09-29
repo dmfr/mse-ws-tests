@@ -51,10 +51,18 @@
 			}
 			function testWs(event) {
 				console.log('testWs') ;
-				return openService(null) ;
+				return openFileTest(null) ;
+			}
+			function openFileTest() {
+				const wssUrl = 'wss://10-39-10-209.int.mirabel-sil.com:8080/replay?id=MET_YOU_YET' ;
+				openWss(wssUrl) ;
 			}
 			function openService(serviceId) {
-				const wssAdr = 'wss://10-39-10-209.int.mirabel-sil.com:8080/play' + (serviceId ? '?id='+serviceId : '') ;
+				const wssUrl = 'wss://10-39-10-209.int.mirabel-sil.com:8080/play' + (serviceId ? '?id='+serviceId : '') ;
+				openWss(wssUrl) ;
+			}
+			function openWss(wssUrl) {
+				const wssAdr = wssUrl ;
 				if( socket == null ) {
 					socket = new WebSocket(wssAdr);
 					socket.binaryType = 'arraybuffer';
