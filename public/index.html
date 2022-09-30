@@ -51,10 +51,10 @@
 			}
 			function testWs(event) {
 				console.log('testWs') ;
-				return openFileTest(null) ;
+				//return openFileTest(null) ;
 			}
-			function openFileTest() {
-				const wssUrl = 'wss://10-39-10-209.int.mirabel-sil.com:8080/replay?id=MET_YOU_YET' ;
+			function openFile(fileId) {
+				const wssUrl = 'wss://10-39-10-209.int.mirabel-sil.com:8080/replay?id='+fileId ;
 				openWss(wssUrl) ;
 			}
 			function openService(serviceId) {
@@ -144,15 +144,18 @@
 			});
 			//console.dir( MP4.minf(null) ) ;
 			
-			document.getElementById('btn1').addEventListener('click', testWs)
+			//document.getElementById('btn1').addEventListener('click', testWs)/
+			document.getElementById('btn1').addEventListener('click', ()=>{openService(null)}) ;
+			document.getElementById('btn2').addEventListener('click', ()=>{openFile('DJIG0000')}) ;
+			document.getElementById('btn3').addEventListener('click', ()=>{openFile('MET_YOU_YET')}) ;
 		</script>
 		<body>
 			<div>
-				<input type="button" value="Button" id='btn1'/>
+				<input type="button" value="Button" id='btn1' />
 				&nbsp;
-				<input type="button" value="Button 2" onclick="testWs(event)" />
+				<input type="button" value="File DJIG0000" id='btn2' />
 				&nbsp;
-				<input type="button" value="Button 3" onclick="testWs(event)" />
+				<input type="button" value="File CLIP" id='btn3' />
 			</div>
 			<div>
 				<p id='caption'>&nbsp;</p>
