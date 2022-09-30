@@ -4,7 +4,6 @@ import MP4 from './mp4-generator.js' ;
 class H264adapter {
 	
 	constructor(video) {
-		//this.name = 'Polygon';
 		this.videoEl = video ;
 		
 		this.mediaSource = new MediaSource ;
@@ -38,7 +37,6 @@ class H264adapter {
 			forwardNals: []
 		};
 		this.runningTs = this.H264_TIMEBASE ;
-		//this.runningClockTs = 0 ;
 		
 		this.isMediaReady = false ;
 		this.isSourceCreated = false ;
@@ -47,12 +45,16 @@ class H264adapter {
 		this.MP4segmentsQueue = [] ;
 	}
 	onSourceOpen() {
-		console.log('onSourceOpen') ;
+		//console.log('onSourceOpen') ;
 		this.mediaSource.removeEventListener('sourceopen', this.onmso);
 	}
 	onSBUpdateEnd() {
+		//console.log('onSBUpdateEnd') ;
+		if( !this.sourceBuffer ) {
+			return ;
+		}
+		
 		console.log(this.videoEl.currentTime) ;
-		//console.dir('sourcebufferupdateend') ;
 		
 		var buffered = this.sourceBuffer.buffered;
 		if( buffered && buffered.length > 0 ) {
@@ -64,35 +66,33 @@ class H264adapter {
 			}
 		}
 		
-											/*
-                                var buffered = this.sourceBuffer.buffered;
-                                if (buffered.length > 0) {
-                                    this.videoEl.currentTime = buffered.end(0) - 0.5 ;
-                                    this.mediaSource.duration = Number.POSITIVE_INFINITY;
-                                }
-                                */
+		/*
+		var buffered = this.sourceBuffer.buffered;
+		if (buffered.length > 0) {
+			this.videoEl.currentTime = buffered.end(0) - 0.5 ;
+			this.mediaSource.duration = Number.POSITIVE_INFINITY;
+		}
+		*/
 		
 		this.isMP4appending = false ;
 		this.tryAppending() ;
 	}
 	onSBError() {
-		console.dir('sourcebuffererror') ;
+		console.log('onSBError') ;
 	}
 	
 	
 	terminate() {
-		this.videoEl.pause() ;
+		this.mediaSource.removeSourceBuffer( this.sourceBuffer ) ;
+		this.sourceBuffer = this.mediaSource = null ;
+		
+		//this.videoEl.pause() ;
 		this.videoEl.removeAttribute("src");
 		this.videoEl.load();
 		//this.videoEl.src = '' ;
 	}
 	
 	
-	
-	pushH264nal(data) {
-		//const units = this.getH264units(data) ;
-		//console.dir(this.track) ;
-	}
 	
 	pushH264data( uarray ) {
 		const units = this.getH264units(uarray) ;
@@ -256,13 +256,13 @@ class H264adapter {
 		}
 		this.isSourceCreated = true ;
 		this.videoEl.play() ;
-                        /*离开页面自动播放*/
+		
 		this.videoEl.addEventListener('pause', function () {
-				//console.dir(arguments) ;
-				// console.log((new Date()).getTime(), this.paused);
-				this.play();
+			// Chrome (+FF ?) pauses video when page in background
+			// => force play to avoid buffer filling (+ latency) // NOTE : solved anyway by jitter reset
+			// => force play anyway for perf benchmarking
+			this.play();
 		}, true);
-		//this.runningClockTs = new Date.now() ;
 	}
 	
 	buildMP4segments() {
@@ -343,7 +343,6 @@ class H264adapter {
 		this.MP4segmentsQueue.push( moof ) ;
 		this.MP4segmentsQueue.push( mdat ) ;
 		*/
-		
 		const mergedArray = new Uint8Array(moof.length + mdat.length);
 		mergedArray.set(moof);
 		mergedArray.set(mdat, moof.length);
@@ -353,7 +352,7 @@ class H264adapter {
 	}
 	
 	tryAppending() {
-		if( this.isMP4appending ) {
+		if( !this.sourceBuffer || this.isMP4appending ) {
 			return ;
 		}
 		var MP4segmentsQueue = this.MP4segmentsQueue ;
