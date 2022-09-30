@@ -54,6 +54,15 @@ class H264adapter {
 		console.log(this.videoEl.currentTime) ;
 		//console.dir('sourcebufferupdateend') ;
 		
+		var buffered = this.sourceBuffer.buffered;
+		if( buffered && buffered.length > 0 ) {
+			const jitter = this.sourceBuffer.buffered.end(0) - this.videoEl.currentTime ;
+			//console.log('jitter:'+jitter) ;
+			if( jitter > 0.1 ) {
+				console.log('jitter resync ! :'+jitter) ;
+				this.videoEl.currentTime = buffered.end(0) ;
+			}
+		}
 		
 											/*
                                 var buffered = this.sourceBuffer.buffered;
