@@ -23,10 +23,8 @@
 			}
 		</style>
 		
-		<script type="text/javascript" src="./wfs.js"></script>
-		
+<!-- 		<script type="text/javascript" src="./wfs.js"></script> -->
 		<script type="module">
-			import MP4 from './mp4-generator.js' ;
 			import H264adapter from './h264-adapter.js' ;
 			
 			let socket = null, adapter = null ;
@@ -109,6 +107,7 @@
 					closeAll() ;
 				}
 			}
+			/*
 			function openServiceWfs() {
 				if( _wfs == null ) {
                 _wfs = new Wfs({});
@@ -118,6 +117,7 @@
 					_wfs = null ;
 				}
 			}
+			*/
 			function closeAll() {
 				socket.close() ;
 				adapter.terminate() ;
@@ -181,12 +181,4 @@
 				<input type="button" value="Button Fullscreen" onclick="testWs(event)" />
 			</div>
 		</body>
-		<script type="module">
-			import { TEST2 } from './test.js';
-			
-			const test2obj = new TEST2() ;
-			test2obj.doTest2() ;
-			
-			
-		</script>
 </html>
