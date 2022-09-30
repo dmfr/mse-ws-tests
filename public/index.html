@@ -54,15 +54,26 @@
 				//return openFileTest(null) ;
 			}
 			function openFile(fileId) {
-				const wssUrl = 'wss://10-39-10-209.int.mirabel-sil.com:8080/replay?id='+fileId ;
+				const wssUrl = '/replay?id='+fileId ;
 				openWss(wssUrl) ;
 			}
 			function openService(serviceId) {
-				const wssUrl = 'wss://10-39-10-209.int.mirabel-sil.com:8080/play' + (serviceId ? '?id='+serviceId : '') ;
+				const wssUrl = '/play' + (serviceId ? '?id='+serviceId : '') ;
 				openWss(wssUrl) ;
 			}
-			function openWss(wssUrl) {
-				const wssAdr = wssUrl ;
+			function buildWssUrl(wsAdr) {
+				var loc = window.location, new_uri;
+				if (loc.protocol === "https:") {
+					new_uri = "wss:";
+				} else {
+					new_uri = "ws:";
+				}
+				new_uri += "//" + loc.host;
+				new_uri += loc.pathname + "/"+wsAdr ;
+				return new_uri.replace(/([^:]\/)\/+/g, "$1"); ;
+			}
+			function openWss(wsAdr) {
+				const wssAdr = buildWssUrl(wsAdr) ;
 				if( socket == null ) {
 					socket = new WebSocket(wssAdr);
 					socket.binaryType = 'arraybuffer';
