@@ -26,11 +26,11 @@ const wss = new WebSocketServer({ noServer: true });
 
 
 const arrFilesDesc = [{
-	id: 'DJIG0000',
+	id: 'CLIP1',
 	filePath: '/tmp/DJIG0000-30fps-filter.h264'
 },{
-	id: 'MET_YOU_YET',
-	filePath: '/tmp/Michael Bublé - _Haven_t Met You Yet_ [Official Music Video].h264'
+	id: 'CLIP2',
+	filePath: '/tmp/CLIP2.h264'
 }];
 
 
