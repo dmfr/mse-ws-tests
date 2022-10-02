@@ -18,7 +18,7 @@ class H264adapter {
 		this.videoEl.src = URL.createObjectURL(this.mediaSource);
 		this.mediaSource.addEventListener('sourceopen', this.onmso);
 		
-		this.H264_TIMEBASE = 2500;
+		this.H264_TIMEBASE = 2500 ;
 		
 		this.videoTrack = {
 			type: 'video',
@@ -36,7 +36,7 @@ class H264adapter {
 			
 			forwardNals: []
 		};
-		this.runningTs = this.H264_TIMEBASE ;
+		this.runningTs = 0 ;
 		
 		this.isMediaReady = false ;
 		this.isSourceCreated = false ;
@@ -53,26 +53,35 @@ class H264adapter {
 		if( !this.sourceBuffer ) {
 			return ;
 		}
-		
-		console.log(this.videoEl.currentTime) ;
-		
 		var buffered = this.sourceBuffer.buffered;
+		
+		let playPosition = this.videoEl.currentTime ;
+		let playDelay = -1 ;
 		if( buffered && buffered.length > 0 ) {
-			const jitter = this.sourceBuffer.buffered.end(0) - this.videoEl.currentTime ;
-			//console.log('jitter:'+jitter) ;
-			if( jitter > 0.1 ) {
-				console.log('jitter resync ! :'+jitter) ;
-				this.videoEl.currentTime = buffered.end(0) ;
-			}
+			playDelay = this.sourceBuffer.buffered.end(0) - this.videoEl.currentTime ;
 		}
+		console.log('play timestamp : '+playPosition+'    play delay : '+playDelay) ;
 		
-		/*
-		var buffered = this.sourceBuffer.buffered;
-		if (buffered.length > 0) {
-			this.videoEl.currentTime = buffered.end(0) - 0.5 ;
-			this.mediaSource.duration = Number.POSITIVE_INFINITY;
+		if( playDelay > 0 ) {
+			const isChrome = !!window.chrome ;
+			const isFF = (typeof InstallTrigger !== 'undefined') ;
+			
+			if( isChrome ) {
+				if( playDelay > 0.2 ) {
+					console.log('JITTER RESYNC ! :'+playDelay) ;
+					this.videoEl.currentTime = buffered.end(0) ;
+				}
+			}
+			/*
+			if( isFF ) {
+				// Firefox workaround to allow smooth playback, increasing latency
+				if( playDelay < 0.5 ) {
+					console.log('GROW DELAY ! :'+playDelay) ;
+					this.videoEl.currentTime = buffered.end(0) - 0.5 ;
+				}
+			}
+			*/
 		}
-		*/
 		
 		this.isMP4appending = false ;
 		this.tryAppending() ;
