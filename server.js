@@ -1,5 +1,6 @@
-import { createServer } from 'https';
-import { readFileSync } from 'fs';
+import { createServer as createServerHttp  } from 'http';
+import { createServer as createServerHttps } from 'https';
+import { readFileSync, existsSync } from 'fs';
 import { WebSocketServer, WebSocket } from 'ws';
 import { Worker } from "worker_threads" ;
 
@@ -11,12 +12,19 @@ import axios from 'axios';
 import * as uuid from 'uuid';
 
 const path = '/etc/letsencrypt/live/int.mirabel-sil.com/' ;
-const server = createServer({
-  cert: readFileSync(path+'/cert.pem'),
-  key: readFileSync(path+'/privkey.pem')
-});
+let server ;
+if( existsSync(path) && existsSync(path+'/cert.pem') && existsSync(path+'/privkey.pem') ) {
+	server = createServerHttps({
+		cert: readFileSync(path+'/cert.pem'),
+		key: readFileSync(path+'/privkey.pem')
+	});
+} else {
+	server = createServerHttp();
+}
+server.listen(8080);
 
-var fileServer = new nStatic.Server('./public');
+
+var fileServer = new nStatic.Server('./public',{ cache: 0 });
 
 //const wss = new WebSocketServer({ server });
 const wss = new WebSocketServer({ noServer: true });
@@ -189,7 +197,6 @@ function cleanupClients() {
 }
 
 
-server.listen(8080);
 
 
 
