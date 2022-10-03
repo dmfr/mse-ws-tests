@@ -18,7 +18,7 @@ class H264adapter {
 		this.videoEl.src = URL.createObjectURL(this.mediaSource);
 		this.mediaSource.addEventListener('sourceopen', this.onmso);
 		
-		this.H264_TIMEBASE = 2500 ;
+		this.H264_TIMEBASE = 2900 ;
 		
 		this.videoTrack = {
 			type: 'video',
@@ -37,6 +37,7 @@ class H264adapter {
 			forwardNals: []
 		};
 		this.runningTs = 0 ;
+		this.countVCL = 0 ;
 		
 		this.isMediaReady = false ;
 		this.isSourceCreated = false ;
@@ -155,6 +156,20 @@ class H264adapter {
 		}
 		if( nbVCL > 0 ) {
 			this.runningTs += this.H264_TIMEBASE ;
+			
+			/*
+			// calc accurate fps
+			if( this.countVCL % 100 == 0 ) {
+				//console.log('every 100 frames') ;
+				const nowTS = Date.now();
+				if( this.lastTS ) {
+					const newH264_TIMEBASE = (nowTS-this.lastTS) * 90000 / 1000 / 100 ;
+					this.H264_TIMEBASE = newH264_TIMEBASE ;
+				}
+				this.lastTS = nowTS ;
+			}
+			*/
+			this.countVCL++ ;
 		}
 	}
 	getH264units( uarray ) {
