@@ -28,9 +28,10 @@ const wss = new WebSocketServer({ noServer: true });
 const arrFilesDesc = [{
 	id: 'CLIP1',
 	filePath: '/tmp/DJIG0000-30fps-filter.h264'
+	//filePath: '/tmp/DJIG0000.h264'
 },{
 	id: 'CLIP2',
-	filePath: '/tmp/CLIP2.h264'
+	filePath: '/tmp/TEST3.h264'
 }];
 
 

@@ -120,8 +120,10 @@
 			*/
 			function closeAll() {
 				socket.close() ;
-				adapter.terminate() ;
-				adapter = null ;
+				if( adapter != null ) {
+					adapter.terminate() ;
+					adapter = null ;
+				}
 			}
 			function downloadBlob() {
 				if( socketBlobs.length == 0 ) {
