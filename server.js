@@ -247,7 +247,7 @@ function registerService(ws) {
 		}
 		*/
 		
-		if( isECcam ) {
+		if( ws.isECcam ) {
 			data = ECcam_onMessageStripHeader(data) ;
 		}
 		//console.dir(data);
@@ -325,6 +325,7 @@ function ECcam_open(camDesc) {
 		ws.on('open', function open() {
 			ws.send('{"index":"0","sessionID":"'+cookie+'"}');
 		});
+		ws.isECcam = true ;
 		
 		camDesc.runningWs = ws ;
 		registerService(ws) ;
