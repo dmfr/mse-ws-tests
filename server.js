@@ -15,8 +15,9 @@ const path = '/etc/letsencrypt/live/int.mirabel-sil.com/' ;
 let server ;
 if( existsSync(path) && existsSync(path+'/cert.pem') && existsSync(path+'/privkey.pem') ) {
 	server = createServerHttps({
-		cert: readFileSync(path+'/cert.pem'),
-		key: readFileSync(path+'/privkey.pem')
+		//cert: readFileSync(path+'/cert.pem'),
+		cert: readFileSync(path+'/fullchain.pem'),
+		key: readFileSync(path+'/privkey.pem'),
 	});
 } else {
 	server = createServerHttp();
