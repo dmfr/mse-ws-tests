@@ -51,6 +51,10 @@ const arrFilesDesc = [{
 const clients = new Map() ;
 
 wss.on('connection', function connection(ws) {
+	if( ws.isRecordSource ) {
+		registerService(ws) ;
+		return ;
+	}
 	
 	const id = uuid.v4() ;
 	let type ;
@@ -129,6 +133,7 @@ server.on('upgrade', function upgrade(request, socket, head) {
 	switch( pathname ) {
 		case '/record' :
 			wss.handleUpgrade(request, socket, head, function done(ws) {
+				ws.isRecordSource = true ;
 				wss.emit('connection', ws, request);
 			});
 			break ;
