@@ -30,6 +30,7 @@
 			let socket = null, adapter = null ;
 			let socketBytes = 0 ;
 			let socketBlobs = [] ;
+			let socketTs = null ;
 			
 			let _wfs ;
 			
@@ -79,6 +80,7 @@
 					socket.addEventListener('open', (event) => {
 						console.log('Open WS : '+wssAdr) ;
 						socketBytes = 0 ;
+						socketTs = null ;
 						socketBlobs = [] ;
 						updateCaption() ;
 					});
@@ -87,6 +89,7 @@
 						console.log('Closing socket !') ;
 						downloadBlob() ;
 						socket = null ;
+						socketTs = null ;
 						socketBlobs = [] ;
 						updateCaption() ;
 					});
@@ -141,13 +144,24 @@
 				document.body.removeChild(link);
 			}
 			function updateCaption() {
-				var str ;
+				var str, str2 ;
 				if( socket ) {
+					const nowTs= Date.now() ;
+					let clockMs ;
+					if( socketTs == null ) {
+						socketTs = nowTs ;
+						clockMs = 0 ;
+					} else {
+						clockMs = nowTs - socketTs ;
+					}
 					str = 'Socket active, received bytes : ' + socketBytes ;
+					str2 = 'Clock : '+clockMs+' ms' ;
 				} else {
 					str = 'Socket closed.' ;
+					str2 = '&nbsp;' ;
 				}
 				document.getElementById('caption').innerHTML = str ;
+				document.getElementById('caption2').innerHTML = str2 ;
 			}
 			
 			
@@ -171,7 +185,10 @@
 				<input type="button" value="File CLIP2" id='btn3' />
 			</div>
 			<div>
-				<p id='caption'>&nbsp;</p>
+				<p>
+					<div id='caption'>&nbsp;</div>
+					<div id='caption2'>&nbsp;</div>
+				</p>
 			</div>
 			<hr>
 			<div style='border: 1px solid gray ; padding: 10px ; margin:4px'>
