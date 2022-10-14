@@ -4,6 +4,10 @@ import MP4 from './mp4-generator.js' ;
 class H264adapter {
 	
 	constructor(video) {
+		this.browserIsChrome = !!window.chrome ;
+		this.browserIsFirefox = (typeof InstallTrigger !== 'undefined') ;
+		this.browserEnableFasterFps = !this.browserIsFirefox ;
+
 		this.videoEl = video ;
 		
 		this.mediaSource = new MediaSource ;
@@ -18,7 +22,10 @@ class H264adapter {
 		this.videoEl.src = URL.createObjectURL(this.mediaSource);
 		this.mediaSource.addEventListener('sourceopen', this.onmso);
 		
-		this.H264_TIMEBASE = 2900 ;
+		this.H264_fps = 30 ; // var ?
+		this.H264_timescale = 90000 ;
+		this.H264_timebase = Math.floor(this.H264_timescale / (this.H264_fps + (this.browserEnableFasterFps ? 1 : 0))) ;
+		this.H264_timebaseRun = this.H264_timebase ;
 		
 		this.videoTrack = {
 			type: 'video',
@@ -30,7 +37,7 @@ class H264adapter {
 			sps: null,
 			pps: null,
 			
-			timescale: 90000,
+			timescale: this.H264_timescale,
 			duration: 0,
 			id: 1,
 			
@@ -61,16 +68,29 @@ class H264adapter {
 		if( buffered && buffered.length > 0 ) {
 			playDelay = this.sourceBuffer.buffered.end(0) - this.videoEl.currentTime ;
 		}
-		console.log('play timestamp : '+playPosition+'    play delay : '+playDelay) ;
+		if( this.countVCL % this.H264_fps == 0 ) {
+			console.log('play delay : '+playDelay) ;
+		}
 		
 		if( playDelay > 0 ) {
-			const isChrome = !!window.chrome ;
-			const isFF = (typeof InstallTrigger !== 'undefined') ;
+			const isChrome = this.browserIsChrome ;
+			const isFF = this.browserIsFirefox ;
 			
-			if( isChrome ) {
-				if( playDelay > 0.2 ) {
-					console.log('JITTER RESYNC ! :'+playDelay) ;
-					this.videoEl.currentTime = buffered.end(0) ;
+			if( !isFF ) {
+// 				// https://bugzilla.mozilla.org/show_bug.cgi?id=1520894
+// 				if( playDelay > 0.2 ) {
+// 					console.log('JITTER RESYNC ! :'+playDelay) ;
+// 					this.videoEl.currentTime = buffered.end(0) ;
+// 				}
+				let newH264_timebaseRun ;
+				if( playDelay >= 0.25 ) {
+					newH264_timebaseRun = Math.floor(this.H264_timebase / 2) ;
+				} else if( playDelay < 0.1 ) {
+					newH264_timebaseRun = this.H264_timebase ;
+				}
+				if( newH264_timebaseRun && (newH264_timebaseRun != this.H264_timebaseRun) ) {
+					this.H264_timebaseRun = newH264_timebaseRun ;
+					console.log('JITTER newH264_timebaseRun : '+newH264_timebaseRun) ;
 				}
 			}
 			/*
@@ -155,7 +175,7 @@ class H264adapter {
 			this.buildMP4segments() ; // MOOF + MDAT
 		}
 		if( nbVCL > 0 ) {
-			this.runningTs += this.H264_TIMEBASE ;
+			this.runningTs += this.H264_timebaseRun ;
 			
 			/*
 			// calc accurate fps
@@ -163,8 +183,8 @@ class H264adapter {
 				//console.log('every 100 frames') ;
 				const nowTS = Date.now();
 				if( this.lastTS ) {
-					const newH264_TIMEBASE = (nowTS-this.lastTS) * 90000 / 1000 / 100 ;
-					this.H264_TIMEBASE = newH264_TIMEBASE ;
+					const newH264_timebaseRun = (nowTS-this.lastTS) * 90000 / 1000 / 100 ;
+					this.H264_timebaseRun = newH264_timebaseRun ;
 				}
 				this.lastTS = nowTS ;
 			}
@@ -349,7 +369,7 @@ class H264adapter {
 		
 		var moofObj = {
 			size: mp4SampleLength,  
-			duration:  this.H264_TIMEBASE, 
+			duration:  this.H264_timebaseRun,
 			cts: 0,
 			flags: {
 				isLeading: 0,
