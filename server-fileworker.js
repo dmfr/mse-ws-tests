@@ -8,6 +8,8 @@ let fileOffset = 0 ;
 let timer ;
 let processing = 0 ;
 
+const readAheadSize = 10 * 1000000 ; // 10MB ?
+
 let filePath = '/tmp/null.h264' ;
 if( workerData && workerData.filePath ) {
 	filePath = workerData.filePath ;
@@ -16,6 +18,11 @@ if( workerData && workerData.filePath ) {
 
 fsPromises.open(filePath).then((fh) => {
 	fileHandler = fh ;
+	let readAheadBuffer = null ;
+	let readAheadOffset = -1 ;
+	if( readAheadSize > 0 ) {
+		readAheadBuffer = Buffer.alloc(readAheadSize) ;
+	}
 	timer = setInterval(() => {
 		if( processing > 0 ) {
 			console.log('OVERLAPPP!!! '+'('+processing+')') ;
@@ -32,6 +39,14 @@ fsPromises.open(filePath).then((fh) => {
 			}
 			if( parentPort ) {
 				parentPort.postMessage({ data });
+			}
+			if( readAheadBuffer != null ) {
+				const newReadAheadOffset = Math.floor((fileOffset + readAheadSize*0.5)/readAheadSize) * readAheadSize ;
+				if( newReadAheadOffset != readAheadOffset ) {
+					readAheadOffset = newReadAheadOffset ;
+					console.log('offset is '+fileOffset+ '    readahead:'+readAheadOffset) ;
+					fileHandler.read(readAheadBuffer,0,readAheadSize,readAheadOffset).then(({bytesRead,b})=>{}) ;
+				}
 			}
 		})
 	}, 1000/30);
