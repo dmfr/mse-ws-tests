@@ -6,7 +6,7 @@ import * as h264reader from './server-lib-h264reader.js' ;
 
 
 let filePath = '/tmp/null.h264' ;
-if( workerData && workerData.filePath ) {
+if( (typeof workerData !== 'undefined') && workerData.filePath ) {
 	filePath = workerData.filePath ;
 }
 

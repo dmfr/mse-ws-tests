@@ -72,7 +72,7 @@ wss.on('connection', function connection(ws) {
 		const filePath = arrFilesDesc.find(element => element.id==ws.targetFile).filePath ;
 		
 		// setup worker
-		const worker = new Worker("./server-fileworker.js", {workerData:{filePath:filePath}});
+		const worker = new Worker("./server-fileworker-unmapped.js", {workerData:{filePath:filePath}});
 		worker.on("message", function(message){
 			ws.send(message.data) ;
 		});
