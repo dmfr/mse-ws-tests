@@ -110,6 +110,13 @@
 					closeAll() ;
 				}
 			}
+			
+			function debugForceDelay1s() {
+				if( adapter ) {
+					// force 1sec delay for test
+					adapter.videoEl.currentTime = adapter.sourceBuffer.buffered.end(0) - 1 ;
+				}
+			}
 			/*
 			function openServiceWfs() {
 				if( _wfs == null ) {
@@ -175,6 +182,7 @@
 			document.getElementById('btn1').addEventListener('click', ()=>{openService(null)}) ;
 			document.getElementById('btn2').addEventListener('click', ()=>{openFile('CLIP1')}) ;
 			document.getElementById('btn3').addEventListener('click', ()=>{openFile('CLIP2')}) ;
+			document.getElementById('btn99').addEventListener('click', ()=>{debugForceDelay1s()}) ;
 		</script>
 		<body>
 			<div>
@@ -183,6 +191,8 @@
 				<input type="button" value="File CLIP1" id='btn2' />
 				&nbsp;
 				<input type="button" value="File CLIP2" id='btn3' />
+				&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+				<input type="button" value="Debug" id='btn99' />
 			</div>
 			<div>
 				<p>
