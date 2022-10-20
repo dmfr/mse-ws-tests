@@ -1,4 +1,6 @@
 
+import ExpGolomb from './server-lib-h264-ExpGolomb.js' ;
+
 
 export async function buildFromOffset( fileHandler, offset ) {
 	function isVCLfirstSlice(data) {
@@ -122,6 +124,30 @@ export async function getNaluAtOffset( fileHandler, offset ) {
 
 
 
-export async function getSPSdimensions( data ) {
-	
+
+export async function getSPSdimensions( fileHandler ) {
+	function discardSP(data) {
+		if( data[0]==0 && data[1]==0 ) {
+			if( data[2]==1 ) {
+				return data.subarray(3) ;
+			}
+			if( data[2]==0 && data[3]==1 ) {
+				return data.subarray(4) ;
+			}
+		}
+		return data ;
+	}
+
+	let nalOffset = 0 ;
+	let data ;
+	while( true ) {
+		data = await getNaluAtOffset(fileHandler,nalOffset) ;
+		nalOffset += data.length ;
+		
+		const innerData = discardSP(data) ;
+		if( (innerData[0] & 0x1f) == 7 ) {
+			return new ExpGolomb(innerData).readSPS() ;
+		}
+		break ;
+	}
 }
