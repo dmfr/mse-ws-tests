@@ -11,13 +11,16 @@ import axios from 'axios';
 
 import * as uuid from 'uuid';
 
-const path = '/etc/letsencrypt/live/int.mirabel-sil.com/' ;
+import { createRequire } from "module";
+const _config = createRequire(import.meta.url)("./server-config.json");
+
+const sslpath = _config.ssl_path ;
 let server ;
-if( existsSync(path) && existsSync(path+'/cert.pem') && existsSync(path+'/privkey.pem') ) {
+if( existsSync(sslpath) && existsSync(sslpath+'/cert.pem') && existsSync(sslpath+'/privkey.pem') ) {
 	server = createServerHttps({
-		//cert: readFileSync(path+'/cert.pem'),
-		cert: readFileSync(path+'/fullchain.pem'),
-		key: readFileSync(path+'/privkey.pem'),
+		//cert: readFileSync(sslpath+'/cert.pem'),
+		cert: readFileSync(sslpath+'/fullchain.pem'),
+		key: readFileSync(sslpath+'/privkey.pem'),
 	});
 } else {
 	server = createServerHttp();
