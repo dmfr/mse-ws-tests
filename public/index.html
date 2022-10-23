@@ -111,6 +111,17 @@
 				}
 			}
 			
+			function openList() {
+				const Http = new XMLHttpRequest();
+				const url='/list';
+				Http.open("GET", url);
+				Http.send();
+
+				Http.onreadystatechange = (e) => {
+					console.log(Http.responseText)
+				}			
+			}
+			
 			function debugForceDelay1s() {
 				if( adapter ) {
 					// force 1sec delay for test
@@ -191,6 +202,8 @@
 				<input type="button" value="File CLIP1" id='btn2' />
 				&nbsp;
 				<input type="button" value="File CLIP2" id='btn3' />
+				&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+				<input type="button" value="List" id='btn50' />
 				&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 				<input type="button" value="Debug" id='btn99' />
 			</div>

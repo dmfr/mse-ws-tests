@@ -113,6 +113,15 @@ server.on('request',function request(request,response) {
 	console.log( 'Path is : '+pathname ) ;
 	
 	request.addListener('end', function () {
+		if( pathname == '/list' ) {
+			const worker = new Worker("./server-fileworker-list.js", {workerData:{}});
+			worker.on("message", function(message){
+				response.writeHead(200);
+				response.write(JSON.stringify(message)) ;
+				response.end();
+			});
+			return ;
+		}
 		fileServer.serve(request, response, function (err, res) {
 			if( err ) {
 				console.dir(err) ;
