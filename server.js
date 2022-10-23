@@ -36,15 +36,7 @@ const wss = new WebSocketServer({ noServer: true });
 
 
 
-
-const arrFilesDesc = [{
-	id: 'CLIP1',
-	filePath: '/tmp/DJIG0000-30fps-filter.h264'
-	//filePath: '/tmp/DJIG0000.h264'
-},{
-	id: 'CLIP2',
-	filePath: '/tmp/TEST3.h264'
-}];
+const pathSave = _config.filestore_path ;
 
 
 
@@ -67,12 +59,12 @@ wss.on('connection', function connection(ws) {
 		console.log('register client '+id+' for '+services.get(ws.targetServiceWs).id) ;
 		clients.set(ws,{id,type}) ;
 	}
-	if( ws.targetFile ) {
+	if( ws.targetPath ) {
 		type = 'file' ;
-		console.log('register client '+id+' for '+ws.targetFile) ;
+		console.log('register client '+id+' for '+ws.targetPath) ;
 		clients.set(ws,{id,type}) ;
 		
-		const filePath = arrFilesDesc.find(element => element.id==ws.targetFile).filePath ;
+		const filePath = ws.targetPath ;
 		
 		// setup worker
 		const worker = new Worker("./server-fileworker-unmapped.js", {workerData:{filePath:filePath}});
@@ -184,15 +176,16 @@ server.on('upgrade', function upgrade(request, socket, head) {
 				return socket.destroy() ;
 			}
 			console.log('requesting '+fileId) ;
-			if( !arrFilesDesc.find(element => element.id==fileId) ) {
-				console.log('no such file') ;
-				return socket.destroy() ;
-			}
 			
-			//console.dir( query ) ;
-			wss.handleUpgrade(request, socket, head, function done(ws) {
-				ws.targetFile = fileId ;
-				wss.emit('connection', ws, request);
+			const worker = new Worker("./server-fileworker-list.js", {workerData:{fileId:fileId}});
+			worker.on("message", function(message){
+				if( message.length != 1 ) {
+					socket.destroy() ;
+				}
+				wss.handleUpgrade(request, socket, head, function done(ws) {
+					ws.targetPath = pathSave + '/' + message[0].file_stream ;
+					wss.emit('connection', ws, request);
+				});
 			});
 			break ;
 		default :
