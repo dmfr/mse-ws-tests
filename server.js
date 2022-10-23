@@ -1,6 +1,6 @@
 import { createServer as createServerHttp  } from 'http';
 import { createServer as createServerHttps } from 'https';
-import { readFileSync, existsSync } from 'fs';
+import { readFileSync, existsSync, createWriteStream } from 'fs';
 import { WebSocketServer, WebSocket } from 'ws';
 import { Worker } from "worker_threads" ;
 
@@ -241,6 +241,11 @@ function registerService(ws) {
 	
 	ws.last_ts = Date.now() ;
 	ws.binaryType = 'arraybuffer' ;
+	if( ws.isRecordSource ) {
+		const filename = id+'.h264',
+			filepath = pathSave+'/'+filename ;
+		ws.writeStream = createWriteStream(filepath) ;
+	}
 	ws.on('message', function message(data) {
 		ws.last_ts = Date.now() ;
 		
@@ -269,8 +274,15 @@ function registerService(ws) {
 				clientWs.send(data) ;
 			}
 		});
+		if( ws.writeStream ) {
+			ws.writeStream.write(new Uint8Array(data)) ;
+		}
 	});
 	ws.on('close', function close() {
+		if( ws.writeStream ) {
+			ws.writeStream.end() ;
+			ws.writeStream = null ;
+		}
 		console.log('unregister service '+id) ;
 		services.delete(ws) ;
 	});
