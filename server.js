@@ -105,7 +105,7 @@ server.on('request',function request(request,response) {
 	console.log( 'Path is : '+pathname ) ;
 	
 	request.addListener('end', function () {
-		if( pathname == '/list' ) {
+		if( pathname == '/list/replay' ) {
 			const worker = new Worker("./server-fileworker-list.js", {workerData:{}});
 			worker.on("message", function(message){
 				response.writeHead(200);
@@ -237,8 +237,6 @@ function registerService(ws) {
 	console.log('register service '+id) ;
 	services.set(ws,{id}) ;
 	
-	const isECcam = true  ;
-	
 	ws.last_ts = Date.now() ;
 	ws.binaryType = 'arraybuffer' ;
 	if( ws.isRecordSource ) {
@@ -340,7 +338,7 @@ function ECcam_open(camDesc) {
 		let cookie = res.data.data.Cookie ;
 		cookie = cookie.split('=') ;
 		cookie = cookie[1] ;
-		console.log(cookie) ;
+		console.log(camDesc.ip+' ECcam cookie: '+cookie) ;
 		//return ;
 		
 		

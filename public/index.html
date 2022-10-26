@@ -112,14 +112,9 @@
 			}
 			
 			function openList() {
-				const Http = new XMLHttpRequest();
-				const url='/list';
-				Http.open("GET", url);
-				Http.send();
-
-				Http.onreadystatechange = (e) => {
-					console.log(Http.responseText)
-				}			
+				fetch('/list/replay')
+					.then((response) => response.json())
+					.then((data) => {console.dir(data)});
 			}
 			
 			function debugForceDelay1s() {
