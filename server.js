@@ -247,6 +247,7 @@ function registerService(ws) {
 	if( ws.isRecordSource ) {
 		const filename = id+'.h264',
 			filepath = pathSave+'/'+filename ;
+		ws.writePath = filepath ;
 		ws.writeStream = createWriteStream(filepath) ;
 	}
 	ws.on('message', function message(data) {
@@ -288,6 +289,9 @@ function registerService(ws) {
 		}
 		console.log('unregister service '+id) ;
 		services.delete(ws) ;
+		if( ws.writePath ) {
+			const tmpIndexWorker = new Worker("./server-fileworker-buildindex.js", {workerData:{filePath:ws.writePath}});
+		}
 	});
 	ws.on('error', function error() {
 		console.log('error websocket') ;
