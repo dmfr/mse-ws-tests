@@ -35,6 +35,11 @@ async function buildFilesList( filestore_path ) {
 		if( !filesList.hasOwnProperty(fileUUID) ) {
 			filesList[fileUUID] = {id: fileUUID} ;
 		}
+		if( path.extname(file) == '.dat' ) {
+			const binaryDat = await fsPromises.readFile(filestore_path + '/' + file),
+				jsonDat = JSON.parse(binaryDat);
+			filesList[fileUUID]['remoteAddress'] = jsonDat.remoteAddress ;
+		}
 		if( path.extname(file) == '.map' ) {
 			filesList[fileUUID]['file_map'] = file ;
 			const binaryMap = await fsPromises.readFile(filestore_path + '/' + file) ;

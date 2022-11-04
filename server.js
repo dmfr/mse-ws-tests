@@ -1,6 +1,6 @@
 import { createServer as createServerHttp  } from 'http';
 import { createServer as createServerHttps } from 'https';
-import { readFileSync, existsSync, createWriteStream } from 'fs';
+import { readFileSync, existsSync, createWriteStream, writeFile } from 'fs';
 import { WebSocketServer, WebSocket } from 'ws';
 import { Worker } from "worker_threads" ;
 
@@ -141,6 +141,7 @@ server.on('upgrade', function upgrade(request, socket, head) {
 		case '/record' :
 			wss.handleUpgrade(request, socket, head, function done(ws) {
 				ws.isRecordSource = true ;
+				ws.remoteAddress = socket.remoteAddress ;
 				wss.emit('connection', ws, request);
 			});
 			break ;
@@ -245,6 +246,15 @@ function registerService(ws) {
 	ws.last_ts = Date.now() ;
 	ws.binaryType = 'arraybuffer' ;
 	if( ws.isRecordSource ) {
+		const filenameDat = id+'.dat',
+			filepathDat = pathSave+'/'+filenameDat ;
+		const obj = {
+			id: id,
+			tsStart: ws.last_ts,
+			remoteAddress: ws.remoteAddress
+		} ;
+		writeFile(filepathDat,JSON.stringify(obj),()=>{}) ;
+		
 		const filename = id+'.h264',
 			filepath = pathSave+'/'+filename ;
 		ws.writePath = filepath ;
@@ -356,6 +366,7 @@ function ECcam_open(camDesc) {
 			ws.send('{"index":"0","sessionID":"'+cookie+'"}');
 		});
 		ws.isECcam = true ;
+		ws.remoteAddr = camDesc.ip ;
 		
 		camDesc.runningWs = ws ;
 		registerService(ws) ;
