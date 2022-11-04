@@ -107,6 +107,20 @@ server.on('request',function request(request,response) {
 	console.log( 'Path is : '+pathname ) ;
 	
 	request.addListener('end', function () {
+		if( pathname == '/list/play' ) {
+			var list = [] ;
+			services.forEach( function(meta,ws) {
+				list.push({
+					id: meta.id,
+					remoteAddress: ws.remoteAddress
+				})
+			}) ;
+			// TODO build list
+			response.writeHead(200);
+			response.write(JSON.stringify(list)) ;
+			response.end();
+			return ;
+		}
 		if( pathname == '/list/replay' ) {
 			const worker = new Worker("./server-fileworker-list.js", {workerData:{}});
 			worker.on("message", function(message){

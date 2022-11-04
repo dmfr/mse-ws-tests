@@ -115,6 +115,9 @@
 				fetch('/list/replay')
 					.then((response) => response.json())
 					.then((data) => {console.dir(data)});
+				fetch('/list/play')
+					.then((response) => response.json())
+					.then((data) => {console.dir(data)});
 			}
 			
 			function debugForceDelay1s() {
