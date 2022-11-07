@@ -21,6 +21,27 @@
 				top: 0;
 				left: 0;
 			}
+			#div_table {
+				padding: 10px;
+			}
+			#div_table table {
+				margin: 4px;
+				border-collapse: collapse;
+				cursor: pointer ;
+			}
+			#div_table table td {
+				padding-left: 6px;
+				padding-right: 6px;
+			}
+			#div_table table td.tright {
+				text-align: right;
+			}
+			#div_table table tr:hover td {
+				background-color: #cccccc !important;
+			}
+			#div_table table tr:nth-child(odd) td {
+				background-color: #eeeeee ;
+			}
 		</style>
 		
 <!-- 		<script type="text/javascript" src="./wfs.js"></script> -->
@@ -112,12 +133,52 @@
 			}
 			
 			function openList() {
+				closeAll() ;
+				document.getElementById('div_table_replay').innerHTML = '' ;
+				document.getElementById('div_table_play').innerHTML = '' ;
 				fetch('/list/replay')
 					.then((response) => response.json())
-					.then((data) => {console.dir(data)});
+					.then((data) => {
+						let htmlTable = '' ;
+						if( data.length > 0 ) {
+							htmlTable += '<table>' ;
+							data.forEach((row) => {
+								//console.dir(row) ;
+								htmlTable += '<tr data-type="replay" data-uuid="'+row.id+'">' ;
+								htmlTable += '<td>'+row.id+'</td>' ;
+								htmlTable += '<td>'+row.date+'</td>' ;
+								htmlTable += '<td class="tright">'+row.size+'</td>' ;
+								if( row.remoteAddress ) {
+									htmlTable += '<td>'+row.remoteAddress+'</td>' ;
+								}
+								htmlTable += '</tr>' ;
+							});
+							htmlTable += '</table>' ;
+						}
+						document.getElementById('div_table_replay').innerHTML = htmlTable ;
+						document.getElementById('div_table').style.display = '' ;
+					});
 				fetch('/list/play')
 					.then((response) => response.json())
-					.then((data) => {console.dir(data)});
+					.then((data) => {
+						let htmlTable = '' ;
+						if( data.length > 0 ) {
+							htmlTable += '<table>' ;
+							data.forEach((row) => {
+								//console.dir(row) ;
+								htmlTable += '<tr data-type="play" data-uuid="'+row.id+'">' ;
+								htmlTable += '<td>'+"LIVE"+'</td>' ;
+								htmlTable += '<td>'+row.id+'</td>' ;
+								if( row.remoteAddress ) {
+									htmlTable += '<td>'+row.remoteAddress+'</td>' ;
+								}
+								htmlTable += '</tr>' ;
+							});
+							htmlTable += '</table>' ;
+						}
+						document.getElementById('div_table_play').innerHTML = htmlTable ;
+						document.getElementById('div_table').style.display = '' ;
+					});
 			}
 			
 			function debugForceDelay1s() {
@@ -138,7 +199,10 @@
 			}
 			*/
 			function closeAll() {
-				socket.close() ;
+				document.getElementById('div_table').style.display = 'none' ;
+				if( socket != null ) {
+					socket.close() ;
+				}
 				if( adapter != null ) {
 					adapter.terminate() ;
 					adapter = null ;
@@ -180,6 +244,22 @@
 				document.getElementById('caption2').innerHTML = str2 ;
 			}
 			
+			function onTableClick(ev) {
+				const trElement = ev.target.closest('tr') ;
+				if( trElement.dataset ) {
+					const dataset = trElement.dataset ;
+					document.getElementById('div_table').style.display = 'none' ;
+					switch( dataset.type ) {
+						case 'replay' :
+							openFile(dataset.uuid) ;
+							break ;
+						case 'play' :
+							openService(dataset.uuid) ;
+							break ;
+					}
+				}
+			}
+			
 			
 			updateCaption() ;
 			addEventListener('resize', (event) => {
@@ -192,7 +272,10 @@
 			document.getElementById('btn2').addEventListener('click', ()=>{openFile('c14f31d7-e680-460e-8e57-616c245647c5')}) ;
 			document.getElementById('btn3').addEventListener('click', ()=>{openFile('e3bacf0c-a0c5-4a26-bed5-dd14a184d2c6')}) ;
 			document.getElementById('btn50').addEventListener('click', ()=>{openList()}) ;
+			document.getElementById('btn51').addEventListener('click', ()=>{closeAll()}) ;
 			document.getElementById('btn99').addEventListener('click', ()=>{debugForceDelay1s()}) ;
+			
+			document.getElementById('div_table').addEventListener('click', onTableClick) ;
 		</script>
 		<body>
 			<div>
@@ -203,8 +286,16 @@
 				<input type="button" value="File CLIP2" id='btn3' />
 				&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 				<input type="button" value="List" id='btn50' />
+				&nbsp;
+				<input type="button" value="Stop" id='btn51' />
 				&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 				<input type="button" value="Debug" id='btn99' />
+			</div>
+			<div id="div_table" style="display:none">
+				<div id="div_table_play">
+				</div>
+				<div id="div_table_replay">
+				</div>
 			</div>
 			<div>
 				<p>
