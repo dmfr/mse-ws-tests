@@ -112,10 +112,19 @@ server.on('request',function request(request,response) {
 			services.forEach( function(meta,ws) {
 				list.push({
 					id: meta.id,
-					remoteAddress: ws.remoteAddress
+					remoteAddress: ws.remoteAddress,
+					initTs: ws.init_ts
 				})
 			}) ;
-			// TODO build list
+			list.sort( function compare( a, b ) {
+				if ( a.initTs > b.initTs ){
+					return -1;
+				}
+				if ( a.initTs < b.initTs ){
+					return 1;
+				}
+				return 0;
+			} );
 			response.writeHead(200);
 			response.write(JSON.stringify(list)) ;
 			response.end();
@@ -257,14 +266,14 @@ function registerService(ws) {
 	console.log('register service '+id) ;
 	services.set(ws,{id}) ;
 	
-	ws.last_ts = Date.now() ;
+	ws.last_ts = ws.init_ts = Date.now() ;
 	ws.binaryType = 'arraybuffer' ;
 	if( ws.isRecordSource ) {
 		const filenameDat = id+'.dat',
 			filepathDat = pathSave+'/'+filenameDat ;
 		const obj = {
 			id: id,
-			tsStart: ws.last_ts,
+			tsStart: ws.init_ts,
 			remoteAddress: ws.remoteAddress
 		} ;
 		writeFile(filepathDat,JSON.stringify(obj),()=>{}) ;
@@ -380,7 +389,7 @@ function ECcam_open(camDesc) {
 			ws.send('{"index":"0","sessionID":"'+cookie+'"}');
 		});
 		ws.isECcam = true ;
-		ws.remoteAddr = camDesc.ip ;
+		ws.remoteAddress = camDesc.ip ;
 		
 		camDesc.runningWs = ws ;
 		registerService(ws) ;
