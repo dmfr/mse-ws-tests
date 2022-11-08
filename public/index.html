@@ -127,6 +127,11 @@
 					});
 					
 					adapter = new H264adapter( document.getElementById('tag_video') ) ;
+					adapter.setListenerFn( function({playDelay}) {
+						if( playDelay != null ) {
+							updateCaptionJitter(playDelay) ;
+						}
+					});
 				} else {
 					closeAll() ;
 				}
@@ -242,6 +247,12 @@
 				}
 				document.getElementById('caption').innerHTML = str ;
 				document.getElementById('caption2').innerHTML = str2 ;
+				if( !socket ) {
+					document.getElementById('caption3').innerHTML = '' ;
+				}
+			}
+			function updateCaptionJitter(jitter) {
+				document.getElementById('caption3').innerHTML = 'Buffer ms : '+Math.round(jitter*1000) ;
 			}
 			
 			function onTableClick(ev) {
@@ -300,7 +311,10 @@
 			<div>
 				<p>
 					<div id='caption'>&nbsp;</div>
-					<div id='caption2'>&nbsp;</div>
+					<div>
+						<span id='caption2'>&nbsp;</span>
+						<span style="margin-left:100px" id='caption3'>&nbsp;</span>
+					</div>
 				</p>
 			</div>
 			<hr>

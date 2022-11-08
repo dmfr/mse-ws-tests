@@ -52,6 +52,11 @@ class H264adapter {
 		this.MP4sequences = 0 ;
 		this.MP4segmentsQueue = [] ;
 	}
+	setListenerFn(fn) {
+		if( typeof fn === 'function' ) {
+			this._listenerFn = fn ;
+		}
+	}
 	onSourceOpen() {
 		//console.log('onSourceOpen') ;
 		this.mediaSource.removeEventListener('sourceopen', this.onmso);
@@ -69,7 +74,10 @@ class H264adapter {
 			playDelay = this.sourceBuffer.buffered.end(0) - this.videoEl.currentTime ;
 		}
 		if( this.countVCL % this.H264_fps == 0 ) {
-			console.log('play delay : '+playDelay) ;
+			if( this._listenerFn ) {
+				this._listenerFn( {playDelay: playDelay} ) ;
+			}
+			//console.log('play delay : '+playDelay) ;
 		}
 		
 		if( playDelay > 0 ) {
