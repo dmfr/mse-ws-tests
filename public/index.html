@@ -116,13 +116,17 @@
 					});
 					// Receiving
 					socket.addEventListener('message', (event) => {
-						//console.dir(event.data) ;
-						socketBytes += event.data.byteLength ;
-						//socketBlobs.push(new Blob(event.data)) ;
-						updateCaption() ;
-						
-						if( adapter ) {
-							adapter.pushH264data(new Uint8Array(event.data)) ;
+						// NOTE, ArrayBuffer (binary) / other (String)
+						if( event.data instanceof ArrayBuffer ) {
+							//const firstByte = new DataView(event.data).getUint8(0) ; //NOTE : example, switch on first byte (video vs audio?)
+							//console.dir(event.data) ;
+							socketBytes += event.data.byteLength ;
+							//socketBlobs.push(new Blob(event.data)) ;
+							updateCaption() ;
+							
+							if( adapter ) {
+								adapter.pushH264data(new Uint8Array(event.data,0)) ;
+							}
 						}
 					});
 					
