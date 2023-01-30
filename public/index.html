@@ -53,6 +53,10 @@
 			let socketBlobs = [] ;
 			let socketTs = null ;
 			
+			// NOTE : Seeking todo
+			let streamByteOffset = 0 ;
+			let streamIsSeeking = false ;
+			
 			let _wfs ;
 			
 			function onWindowResize(ev) {
@@ -104,6 +108,8 @@
 						socketTs = null ;
 						socketBlobs = [] ;
 						updateCaption() ;
+						
+						streamByteOffset = 0 ;
 					});
 					// Connection closed
 					socket.addEventListener('close', (event) => {
@@ -121,6 +127,7 @@
 							//const firstByte = new DataView(event.data).getUint8(0) ; //NOTE : example, switch on first byte (video vs audio?)
 							//console.dir(event.data) ;
 							socketBytes += event.data.byteLength ;
+							streamByteOffset += event.data.byteLength ;
 							//socketBlobs.push(new Blob(event.data)) ;
 							updateCaption() ;
 							
@@ -326,6 +333,7 @@
 				<div class="video-container">
 					<video id='tag_video' class="video"  />
 				</div>
+				<input class="seekbar" type="range" style='width:100% ; display:none'></input>
 			</div>
 			<div style='text-align:center'>
 				<input type="button" value="Button Fullscreen" onclick="testWs(event)" />
