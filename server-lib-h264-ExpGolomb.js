@@ -278,6 +278,121 @@ class ExpGolomb {
       height: ((2 - frameMbsOnlyFlag) * (picHeightInMapUnitsMinus1 + 1) * 16) - ((frameMbsOnlyFlag? 2 : 4) * (frameCropTopOffset + frameCropBottomOffset))
     };
   }
+  
+	/*
+	* For HEVC
+	*/
+	readSPS_hevc() {
+		// nal_unit_header( )
+		this.readBits(1);
+		this.readBits(6);
+		this.readBits(6);
+		this.readBits(3);
+		
+		var max_sub_layers_minus1,
+			chromaFormatIdc = null,
+			picWidthInLumaSamples = 0,
+			picHeightInLumaSamples = 0,
+			conformanceWindowFlag = null,
+			frameCropLeftOffset = 0,
+			frameCropRightOffset = 0,
+			frameCropTopOffset = 0,
+			frameCropBottomOffset = 0 ;
+		
+		let i ;
+		
+		this.skipBits(4); // sps_video_parameter_set_id
+		max_sub_layers_minus1 = this.readBits(3); // sps_max_sub_layers_minus1
+		this.skipBits(1); // sps_temporal_id_nesting_flag
+		
+		// *************** profile_tier_level( 1, sps_max_sub_layers_minus1 ) *****************
+		this.skipBits(8) ;
+		for( i=0 ; i<4 ; i++ ) {
+			this.skipBits(8) ;
+		}
+		for( i=0 ; i<6 ; i++ ) {
+			this.skipBits(8) ;
+		}
+		this.skipBits(8) ; // general_level_idc
+		
+		let sub_layer_profile_present_flag = [] ;
+		let sub_layer_level_present_flag = [] ;
+		for (i = 0; i < max_sub_layers_minus1; i++) {
+			sub_layer_profile_present_flag[i] = this.readBoolean() ;
+			sub_layer_level_present_flag[i]   = this.readBoolean() ;
+		}
+		if (max_sub_layers_minus1 > 0) {
+			for (i = max_sub_layers_minus1; i < 8; i++) {
+					this.skipBits(2); // reserved_zero_2bits[i]
+			}
+		}
+		for (i = 0; i < max_sub_layers_minus1; i++) {
+			if (sub_layer_profile_present_flag[i]) {
+				/*
+				* sub_layer_profile_space[i]                     u(2)
+				* sub_layer_tier_flag[i]                         u(1)
+				* sub_layer_profile_idc[i]                       u(5)
+				* sub_layer_profile_compatibility_flag[i][0..31] u(32)
+				* sub_layer_progressive_source_flag[i]           u(1)
+				* sub_layer_interlaced_source_flag[i]            u(1)
+				* sub_layer_non_packed_constraint_flag[i]        u(1)
+				* sub_layer_frame_only_constraint_flag[i]        u(1)
+				* sub_layer_reserved_zero_44bits[i]              u(44)
+				*/
+				this.skipBits(8) ;
+				for( i=0 ; i<4 ; i++ ) {
+					this.skipBits(8) ;
+				}
+				for( i=0 ; i<6 ; i++ ) {
+					this.skipBits(8) ;
+				}
+			}
+			if (sub_layer_level_present_flag[i]) {
+				this.skipBits(8);
+			}
+		}
+		// ***********************************************
+		
+		this.skipUEG() ; // sps_seq_parameter_set_id
+		chromaFormatIdc = this.readUEG() ; // chroma_format_idc
+		if( chromaFormatIdc == 3 ) {
+			this.skipBits(1); // separate_colour_plane_flag
+		}
+		picWidthInLumaSamples = this.readUEG() ; // pic_width_in_luma_samples
+		picHeightInLumaSamples = this.readUEG() ; // pic_height_in_luma_samples
+		conformanceWindowFlag = this.readBoolean() ; // conformance_window_flag
+		if( conformanceWindowFlag ) {
+			frameCropLeftOffset = this.readUEG() ; // conf_win_left_offset
+			frameCropRightOffset = this.readUEG() ; // conf_win_right_offset
+			frameCropTopOffset = this.readUEG() ; // conf_win_top_offset
+			frameCropBottomOffset = this.readUEG() ; // conf_win_bottom_offset
+		}
+		
+		var SubWidthC = 1,
+			SubHeightC = 1 ;
+		switch( chromaFormatIdc ) {
+			case 2 :
+				SubWidthC = 2 ;
+				SubHeightC = 1 ;
+				break ;
+			case 1 :
+				SubWidthC = 2 ;
+				SubHeightC = 2 ;
+				break ;
+				
+			default :
+				SubWidthC = 1 ;
+				SubHeightC = 1 ;
+		}
+		
+		var width = picWidthInLumaSamples - ( SubWidthC * (frameCropRightOffset + frameCropLeftOffset) ),
+			height = picHeightInLumaSamples - ( SubHeightC * (frameCropBottomOffset + frameCropTopOffset) ) ;
+		
+		return {
+			width: width,
+			height: height
+		};
+	}
 
   readSliceType() {
     // skip NALu type
