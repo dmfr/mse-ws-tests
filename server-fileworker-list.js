@@ -2,6 +2,7 @@
 import { workerData, parentPort } from "worker_threads";
 import * as fsPromises from 'fs/promises';
 import * as path from 'path';
+import { Worker } from "worker_threads" ;
 
 import h264reader from './server-lib-h264reader.js' ;
 
@@ -80,4 +81,15 @@ if( typeof parentPort !== 'undefined' ) {
 		parentPort.postMessage(filesList);
 		//parentPort.close() ;
 	}
+}
+if( !workerData ) {
+	Promise.all(filesList.map(async (filesListRow) => {
+		await timeout(100) ;
+		if( !filesListRow.hasOwnProperty('file_map') ) {
+			//console.log('building for '+filesListRow.file_stream );
+			const pathSave = _config.filestore_path,
+				filePath = pathSave + '/' + filesListRow.file_stream ;
+			new Worker("./server-fileworker-buildindex.js", {workerData:{filePath:filePath}});
+		}
+	}));
 }
