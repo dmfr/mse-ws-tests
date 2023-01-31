@@ -3,8 +3,6 @@ import { workerData, parentPort } from "worker_threads";
 import * as fsPromises from 'fs/promises';
 import { readFileSync } from 'fs';
 
-import * as h264reader from './server-lib-h264reader.js' ;
-
 
 let filePath = '/var/lib/mse-websocket-save/e3bacf0c-a0c5-4a26-bed5-dd14a184d2c6.h264' ;
 let filePathMap = '/var/lib/mse-websocket-save/e3bacf0c-a0c5-4a26-bed5-dd14a184d2c6.map' ;

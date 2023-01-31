@@ -2,11 +2,11 @@
 import { workerData, parentPort } from "worker_threads";
 import * as fsPromises from 'fs/promises';
 
-import * as h264reader from './server-lib-h264reader.js' ;
+import h264reader from './server-lib-h264reader.js' ;
 
 
 let filePath = '/tmp/null.h264' ;
-if( (typeof workerData !== 'undefined') && workerData.filePath ) {
+if( workerData && workerData.filePath ) {
 	filePath = workerData.filePath ;
 }
 
@@ -15,7 +15,11 @@ let timer ;
 let bufferChunks ;
 const bufferChunksSize = 30 * 3 ; // 10sec
 
+let videoreader ;
+
 fsPromises.open(filePath).then((fileHandler) => {
+	videoreader = new h264reader(fileHandler,h264reader.getVideoFormatFromPath(filePath)) ;
+	
 	bufferChunks = [] ;
 	timer = setInterval(() => {
 		if( bufferChunks.length > 0 ) {
@@ -43,7 +47,7 @@ function timeout(ms) {
 async function loopBuffer( fileHandler ) {
 	let fileOffset = 0 ;
 	while(true) {
-		const {newOffset,data} = await h264reader.buildFromOffset(fileHandler,fileOffset) ;
+		const {newOffset,data} = await videoreader.buildFromOffset(fileOffset) ;
 			if(data == null) {
 				bufferChunks.push(null);
 				break ;

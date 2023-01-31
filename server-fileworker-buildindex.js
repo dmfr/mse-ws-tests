@@ -3,11 +3,11 @@ import { workerData, parentPort } from "worker_threads";
 import * as fsPromises from 'fs/promises';
 import * as path from 'path';
 
-import * as h264reader from './server-lib-h264reader.js' ;
+import h264reader from './server-lib-h264reader.js' ;
 
 
 let filePath = '/tmp/null.h264' ;
-if( (typeof workerData !== 'undefined') && workerData.filePath ) {
+if( workerData && workerData.filePath ) {
 	filePath = workerData.filePath ;
 }
 function changeExtension(file, extension) {
@@ -16,8 +16,11 @@ function changeExtension(file, extension) {
 }
 const filePathMap = changeExtension(filePath,'map') ;
 
+let videoreader ;
 
 fsPromises.open(filePath).then((fileHandler) => {
+	videoreader = new h264reader(fileHandler,h264reader.getVideoFormatFromPath(filePath)) ;
+	
 	buildIndex(fileHandler).then((obj)=>{
 		//write obj to MAP
 		fsPromises.writeFile(filePathMap, JSON.stringify(obj)).then(()=>{}) ;
@@ -31,18 +34,18 @@ async function buildIndex( fileHandler ) {
 	let obj = {} ;
 	
 	try {
-		const {width,height} = await h264reader.getSPSdimensions(fileHandler) ;
+		const {width,height} = await videoreader.getSPSdimensions() ;
 		obj['size'] = {width,height} ;
 	} catch(e) {}
 	
 	
 	const offsets = [] ;
 	
-	const { newOffset, data } = await h264reader.buildFromOffset(fileHandler,0) ;
+	const { newOffset, data } = await videoreader.buildFromOffset(0) ;
 	offsets.push(newOffset-data.length) ;
 	let offset = 0 ;
 	while(true) {
-		const { newOffset, data } = await h264reader.buildFromOffset(fileHandler,offset) ;
+		const { newOffset, data } = await videoreader.buildFromOffset(offset) ;
 		if( data == null ) {
 			break ;
 		}

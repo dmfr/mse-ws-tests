@@ -3,11 +3,13 @@ import { workerData, parentPort } from "worker_threads";
 import * as fsPromises from 'fs/promises';
 import * as path from 'path';
 
+import h264reader from './server-lib-h264reader.js' ;
+
 import { createRequire } from "module";
 const _config = createRequire(import.meta.url)("./server-config.json");
 
 let requestedFileId = null 
-if( (typeof workerData !== 'undefined') && workerData.fileId ) {
+if( workerData && workerData.fileId ) {
 	requestedFileId = workerData.fileId ;
 }
 
@@ -42,16 +44,19 @@ async function buildFilesList( filestore_path ) {
 		}
 		if( path.extname(file) == '.map' ) {
 			filesList[fileUUID]['file_map'] = file ;
-			const binaryMap = await fsPromises.readFile(filestore_path + '/' + file) ;
-			filesList[fileUUID]['videosize'] = JSON.parse(binaryMap).size ;
+			const binaryMap = await fsPromises.readFile(filestore_path + '/' + file),
+				jsonMap = JSON.parse(binaryMap) ;
+			filesList[fileUUID]['videosize'] = jsonMap.size ;
+			filesList[fileUUID]['fps'] = jsonMap.fps || 30 ;
 		}
-		if( path.extname(file) == '.h264' ) {
+		if( ['.h264','.avc','.hevc'].includes(path.extname(file)) ) {
 			filesList[fileUUID]['file_stream'] = file ;
 			const infos = await fsPromises.stat(filestore_path + '/' + file) ;
 			if( !filesList[fileUUID].hasOwnProperty('date') ) {
 				filesList[fileUUID]['date'] = infos.mtime.toISOString() ;
 			}
 			filesList[fileUUID]['size'] = infos.size ;
+			filesList[fileUUID]['format'] = h264reader.getVideoFormatFromPath(file) ;
 		}
 	}));
 	
