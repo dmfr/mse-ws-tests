@@ -66,10 +66,11 @@ wss.on('connection', function connection(ws) {
 		
 		const filePath = ws.targetPath ;
 		const filePathMap = ws.targetPathMap ;
+		const videoFps = ws.targetVideoFps ;
 		const workerJs = filePathMap ? "./server-fileworker-mapped.js" : "./server-fileworker-unmapped.js" ;
 		
 		// setup worker
-		const worker = new Worker(workerJs, {workerData:{filePath:filePath, filePathMap:filePathMap}});
+		const worker = new Worker(workerJs, {workerData:{filePath:filePath, filePathMap:filePathMap, videoFps:videoFps}});
 		worker.on("message", function(message){
 			ws.send(message.data) ;
 		});
@@ -212,6 +213,9 @@ server.on('upgrade', function upgrade(request, socket, head) {
 					ws.targetPath = pathSave + '/' + message[0].file_stream ;
 					if( message[0].file_map ) {
 						ws.targetPathMap = pathSave + '/' + message[0].file_map ;
+					}
+					if( message[0].fps ) {
+						ws.targetVideoFps = message[0].fps ;
 					}
 					wss.emit('connection', ws, request);
 				});

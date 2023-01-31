@@ -6,8 +6,10 @@ import h264reader from './server-lib-h264reader.js' ;
 
 
 let filePath = '/tmp/null.h264' ;
+let videoFps = 30 ;
 if( workerData && workerData.filePath ) {
 	filePath = workerData.filePath ;
+	videoFps = workerData.videoFps || 30 ;
 }
 
 
@@ -32,7 +34,7 @@ fsPromises.open(filePath).then((fileHandler) => {
 				parentPort.postMessage({ data });
 			}
 		}
-	}, 1000/30);
+	}, 1000/videoFps);
 	loopBuffer( fileHandler ).then(({})=>{
 		// EOF reached
 	}) ;

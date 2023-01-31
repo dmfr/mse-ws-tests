@@ -6,9 +6,11 @@ import { readFileSync } from 'fs';
 
 let filePath = '/var/lib/mse-websocket-save/e3bacf0c-a0c5-4a26-bed5-dd14a184d2c6.h264' ;
 let filePathMap = '/var/lib/mse-websocket-save/e3bacf0c-a0c5-4a26-bed5-dd14a184d2c6.map' ;
+let videoFps = 30 ;
 if( (workerData != null) && (workerData.filePath&&workerData.filePathMap) ) {
 	filePath = workerData.filePath ;
 	filePathMap = workerData.filePathMap ;
+	videoFps = workerData.videoFps || 30 ;
 }
 
 
@@ -32,7 +34,7 @@ fsPromises.open(filePath).then((fileHandler) => {
 				parentPort.postMessage({ data });
 			}
 		});
-	}, 1000/30);
+	}, 1000/videoFps);
 },()=>{
 	console.log("FileNotFound: "+filePath) ;
 });
