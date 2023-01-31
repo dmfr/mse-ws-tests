@@ -2,6 +2,7 @@
 import * as path from 'path';
 
 import ExpGolomb from './server-lib-h264-ExpGolomb.js' ;
+import * as hevcTools from './server-hevc-tools.js' ;
 
 
 class h264reader {
@@ -33,7 +34,7 @@ class h264reader {
 	}
 	
 	async buildFromOffset( offset ) {
-		function isVCLfirstSlice(data) {
+		function isVCLfirstSlice_h264(data) {
 			// remove SP
 			if( data[0]==0 && data[1]==0 ) {
 				if( data[2]==1 ) {
@@ -73,7 +74,15 @@ class h264reader {
 			
 			// 
 			
-			const thisVCLfirstSlice = isVCLfirstSlice(nalBuffer) ;
+			let thisVCLfirstSlice ;
+			switch( this.videoFormat ) {
+				case 'avc' :
+					thisVCLfirstSlice = isVCLfirstSlice_h264(nalBuffer) ;
+					break ;
+				case 'hevc' :
+					thisVCLfirstSlice = hevcTools.hevcIsVCLfirst(nalBuffer) ;
+					break ;
+			}
 			if( hasVCLfirstSlice && thisVCLfirstSlice ) {
 				break ;
 			}
@@ -172,13 +181,24 @@ class h264reader {
 		let data ;
 		while( true ) {
 			data = await this.getNaluAtOffset(nalOffset) ;
+			if( data == null ) {
+				break ;
+			}
 			nalOffset += data.length ;
 			
 			const innerData = discardSP(data) ;
-			if( (innerData[0] & 0x1f) == 7 ) {
-				return new ExpGolomb(innerData).readSPS() ;
+			switch( this.videoFormat ) {
+				case 'avc' :
+					if( (innerData[0] & 0x1f) == 7 ) {
+						return new ExpGolomb(innerData).readSPS() ;
+					}
+					break ;
+				case 'hevc' :
+					if( hevcTools.hevcGetNalType(innerData) == 33 ) {
+						return new ExpGolomb(innerData).readSPS_hevc() ;
+					}
+					break ;
 			}
-			break ;
 		}
 	}
 }
