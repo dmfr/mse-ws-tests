@@ -22,6 +22,9 @@ function timeout(ms) {
 
 function getUUid(str) {
 	const matches = str.match(/\w{8}-\w{4}-\w{4}-\w{4}-\w{12}/) ;
+	if( !matches ) {
+		return null ;
+	}
 	return matches[0];
 }
 
@@ -32,6 +35,9 @@ async function buildFilesList( filestore_path ) {
 	await Promise.all(files.map(async (file) => {
 		await timeout(100) ;
 		const fileUUID = getUUid(file) ;
+		if( !fileUUID ) {
+			return ;
+		}
 		if( requestedFileId && (requestedFileId!=fileUUID) ) {
 			return ;
 		}
