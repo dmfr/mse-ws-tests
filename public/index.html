@@ -36,6 +36,9 @@
 			#div_table table td.tright {
 				text-align: right;
 			}
+			#div_table table td.tcenter {
+				text-align: center;
+			}
 			#div_table table tr:hover td {
 				background-color: #cccccc !important;
 			}
@@ -159,9 +162,15 @@
 						if( data.length > 0 ) {
 							htmlTable += '<table>' ;
 							data.forEach((row) => {
+								let format_and_fps = row.format
+								if( row.fps && (row.fps!=30) ) {
+									format_and_fps += ' / '+row.fps+'fps' ;
+								}
+								
 								//console.dir(row) ;
 								htmlTable += '<tr data-type="replay" data-uuid="'+row.id+'">' ;
 								htmlTable += '<td>'+row.id+'</td>' ;
+								htmlTable += '<td class="tcenter">'+format_and_fps+'</td>' ;
 								htmlTable += '<td>'+row.date+'</td>' ;
 								htmlTable += '<td class="tright">'+row.size+'</td>' ;
 								if( row.remoteAddress ) {

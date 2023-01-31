@@ -121,8 +121,11 @@ class H264adapter {
 	
 	
 	terminate() {
-		this.mediaSource.removeSourceBuffer( this.sourceBuffer ) ;
-		this.sourceBuffer = this.mediaSource = null ;
+		if( this.sourceBuffer ) {
+			this.mediaSource.removeSourceBuffer( this.sourceBuffer ) ;
+			this.sourceBuffer = null ;
+		}
+		this.mediaSource = null ;
 		
 		//this.videoEl.pause() ;
 		this.videoEl.removeAttribute("src");
