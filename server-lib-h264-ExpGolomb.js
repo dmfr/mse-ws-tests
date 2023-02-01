@@ -298,22 +298,25 @@ class ExpGolomb {
 			frameCropRightOffset = 0,
 			frameCropTopOffset = 0,
 			frameCropBottomOffset = 0 ;
+			
+		var generalProfileIdc, generalLevelIdc ;
 		
-		let i ;
+		let i,j ;
 		
 		this.skipBits(4); // sps_video_parameter_set_id
 		max_sub_layers_minus1 = this.readBits(3); // sps_max_sub_layers_minus1
 		this.skipBits(1); // sps_temporal_id_nesting_flag
 		
 		// *************** profile_tier_level( 1, sps_max_sub_layers_minus1 ) *****************
-		this.skipBits(8) ;
-		for( i=0 ; i<4 ; i++ ) {
+		this.skipBits(3) ;
+		generalProfileIdc = this.readBits(5) ; // general_profile_idc
+		for( j=0 ; j<4 ; j++ ) {
 			this.skipBits(8) ;
 		}
-		for( i=0 ; i<6 ; i++ ) {
+		for( j=0 ; j<6 ; j++ ) {
 			this.skipBits(8) ;
 		}
-		this.skipBits(8) ; // general_level_idc
+		generalLevelIdc = this.readBits(8) ; // general_level_idc
 		
 		let sub_layer_profile_present_flag = [] ;
 		let sub_layer_level_present_flag = [] ;
@@ -340,10 +343,10 @@ class ExpGolomb {
 				* sub_layer_reserved_zero_44bits[i]              u(44)
 				*/
 				this.skipBits(8) ;
-				for( i=0 ; i<4 ; i++ ) {
+				for( j=0 ; j<4 ; j++ ) {
 					this.skipBits(8) ;
 				}
-				for( i=0 ; i<6 ; i++ ) {
+				for( j=0 ; j<6 ; j++ ) {
 					this.skipBits(8) ;
 				}
 			}
@@ -390,7 +393,10 @@ class ExpGolomb {
 		
 		return {
 			width: width,
-			height: height
+			height: height,
+			
+			general_profile_idc: generalProfileIdc,
+			general_level_idc: generalLevelIdc
 		};
 	}
 
