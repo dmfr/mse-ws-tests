@@ -228,6 +228,76 @@ class H264adapter {
 			this.countVCL++ ;
 		}
 	}
+	
+	pushHevcData( uarray ) {
+		const units = this.getNalUnits(uarray) ;
+		
+		// NOTE 29/09
+		// requirement :
+		// one H264 message = one video frame
+		let nbVCL = 0 ;
+		for( let i=0 ; i<units.length ; i++ ) {
+			const objNalu = units[i] ;
+			if( !this.isHevcForwardNAL(objNalu) ) {
+				continue ;
+			}
+			
+			if( this.isHevcVideoframeNAL(objNalu) ) {
+				this.videoTrack.forwardNals.push({
+					runningTs: this.runningTs,
+					isKey: ((objNalu.type >= 16) && (objNalu.type < 24)),
+					data: objNalu.data
+				});
+				
+				nbVCL++ ;
+			}
+			
+			// get datas for init
+			if( !this.isSourceCreated ) {
+				switch( objNalu.type ) {
+					case 32 : // VPS
+						this.videoTrack.vps = [objNalu.data] ;
+						break ;
+					case 33 : // SPS
+						const trackInfo = new ExpGolomb(objNalu.data).readSPS_hevc() ;
+						
+						const codecArr = ['hvc1',''+trackInfo.general_profile_idc,'','L'+trackInfo.general_level_idc,'90'] ;
+						switch( trackInfo.general_profile_idc ) {
+							case 1 : codecArr[2] = '6' ; break ;
+							case 2 : codecArr[2] = '4' ; break ;
+							case 3 : codecArr[2] = 'E' ; break ;
+							case 4 : codecArr[2] = '10' ; break ;
+						}
+						
+						this.videoTrack.sps = [objNalu.data] ;
+						this.videoTrack.width = trackInfo.width ;
+						this.videoTrack.height = trackInfo.height ;
+						this.videoTrack.codec = codecArr.join('.') ;
+						break ;
+					case 34 : // PPS
+						this.videoTrack.pps = [objNalu.data] ;
+						break ;
+				}
+			}
+			if( !this.isSourceCreated && this.videoTrack.pps && this.videoTrack.sps && this.videoTrack.vps ) {
+				// PPS+SPS+VPS now in track
+				// => create source + initialize MP4
+				// ==> stop discarding VCL NAL(s)
+				// ===> so next NAL(s) from same message (IDR...) will be queued
+				this.createSourceBuffer() ;
+				this.buildMP4segments() ; // MOOV
+				continue ;
+			}
+		}
+		if( this.isSourceCreated ) {
+			this.buildMP4segments() ; // MOOF + MDAT
+		}
+		if( nbVCL > 0 ) {
+			this.runningTs += this.H264_timebaseRun ;
+			this.countVCL++ ;
+		}
+	}
+	
 	getNalUnits( uarray ) {
     var i = 0, len = uarray.byteLength, value, overflow, state = 0; //state = this.avcNaluState;
     var units = [], unit, unitType, lastUnitStart, lastUnitType; 
@@ -287,6 +357,24 @@ class H264adapter {
 
     return units;
 	}
+	
+	isHevcForwardNAL( objNalu ) {
+		if( this.isHevcVideoframeNAL(objNalu) && !this.isSourceCreated ) {
+			return false ;
+		}
+		if( !this.isHevcVideoframeNAL(objNalu) && this.isSourceCreated ) {
+			return false ;
+		}
+		return true ;
+	}
+	isHevcVideoframeNAL( objNalu ) {
+		const nalType = objNalu.type ;
+		if( nalType < 32 ) {
+			return true ;
+		}
+		return false ;
+	}
+	
 	isAvcForwardNAL( objNalu ) {
 		switch( objNalu.type ) {
 			case 1 :
