@@ -39,7 +39,10 @@ class MP4 {
       trex: [],
       tkhd: [],
       vmhd: [],
-      smhd: []
+      smhd: [],
+		
+		hvc1: [],
+		hvcC: [],
     };
 
     var i;
@@ -309,8 +312,18 @@ class MP4 {
 
   static avc1(track) {
     var sps = [], pps = [], i, data, len;
+	 
+	 var fourcc = 'avc1' ;
+	 if( track.codec ) {
+		 fourcc = track.codec.split('.')[0] ;
+	 }
+	 
+	 var width = track.width,
+        height = track.height;
+    
+	 var innerC ;
+	 if( fourcc=='avc1' ) {
     // assemble the SPSs
-
     for (i = 0; i < track.sps.length; i++) {
       data = track.sps[i];
       len = data.byteLength;
@@ -337,11 +350,58 @@ class MP4 {
             0xE0 | track.sps.length // 3bit reserved (111) + numOfSequenceParameterSets
           ].concat(sps).concat([
             track.pps.length // numOfPictureParameterSets
-          ]).concat(pps))), // "PPS"
-        width = track.width,
-        height = track.height;
+          ]).concat(pps))); // "PPS"
     //console.log('avcc:' + Hex.hexDump(avcc));
-    return MP4.box(MP4.types.avc1, new Uint8Array([
+		
+		innerC=avcc ;
+	 }
+		  
+		  
+	if( fourcc=='hvc1' ) {
+		  var hvccVPS = [
+				1 << 7 | 32 & 0x3f,
+				0,1,
+				0,track.vps[0].byteLength
+			].concat(Array.prototype.slice.call(track.vps[0])) ;
+			//console.dir(hvccVPS) ;
+		  var hvccSPS = [
+				1 << 7 | 33 & 0x3f,
+				0,1,
+				0,track.sps[0].byteLength
+			].concat(Array.prototype.slice.call(track.sps[0])) ;
+			//console.dir(hvccSPS) ;
+		  var hvccPPS = [
+				1 << 7 | 34 & 0x3f,
+				0,1,
+				0,track.pps[0].byteLength
+			].concat(Array.prototype.slice.call(track.pps[0])) ;
+			//console.dir(hvccPPS) ;
+				
+		  
+		  var hvcc = MP4.box(MP4.types.hvcC, new  Uint8Array([
+            0x01,   // version
+				( 0 << 6 | 0 << 5 | 1 ),
+				0xff,0xff,0xff,0xff,
+				0xff,0xff,0xff,0xff,0xff,0xff,
+				123,
+				0xf0, 0x00,
+				0 | 0xfc,
+				1 | 0xfc,
+				0 | 0xf8,
+				0 | 0xf8,
+				0,0,
+				(0 << 6 | 0 << 3 | 0 << 2 | 3),
+
+				3,
+				
+				
+				
+			].concat(hvccVPS).concat(hvccSPS).concat(hvccPPS)));
+		  //console.dir(hvcc) ;
+		  innerC=hvcc ;
+	}        
+		  
+    return MP4.box(MP4.types[fourcc], new Uint8Array([
         0x00, 0x00, 0x00, // reserved
         0x00, 0x00, 0x00, // reserved
         0x00, 0x01, // data_reference_index
@@ -369,7 +429,7 @@ class MP4 {
         0x00, 0x00, 0x00, // compressorname
         0x00, 0x18,   // depth = 24
         0x11, 0x11]), // pre_defined = -1
-          avcc,
+          innerC,
           MP4.box(MP4.types.btrt, new Uint8Array([
             0x00, 0x1c, 0x9c, 0x80, // bufferSizeDB
             0x00, 0x2d, 0xc6, 0xc0, // maxBitrate
