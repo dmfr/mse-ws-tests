@@ -3,12 +3,12 @@ import MP4 from './mp4-generator.js' ;
 
 class H264adapter {
 	
-	constructor(video) {
+	constructor(videoEl, videoInfo={}) {
 		this.browserIsChrome = !!window.chrome ;
 		this.browserIsFirefox = (typeof InstallTrigger !== 'undefined') ;
 		this.browserEnableFasterFps = !this.browserIsFirefox ;
 
-		this.videoEl = video ;
+		this.videoEl = videoEl ;
 		
 		this.mediaSource = new MediaSource ;
 		this.sourceBuffer = null ;
@@ -22,7 +22,10 @@ class H264adapter {
 		this.videoEl.src = URL.createObjectURL(this.mediaSource);
 		this.mediaSource.addEventListener('sourceopen', this.onmso);
 		
-		this.H264_fps = 30 ; // var ?
+		this.videoFormat = videoInfo.format || 'avc' ;
+		this.videoFps = videoInfo.fps || 30 ;
+		
+		this.H264_fps = this.videoFps ; // var ?
 		this.H264_timescale = 90000 ;
 		this.H264_timebase = Math.floor(this.H264_timescale / (this.H264_fps + (this.browserEnableFasterFps ? 0.2 : 0))) ;
 		this.H264_timebaseRun = this.H264_timebase ;
@@ -134,9 +137,19 @@ class H264adapter {
 	}
 	
 	
+	pushNalsData( uarray ) {
+		switch( this.videoFormat ) {
+			case 'avc' :
+				this.pushAvcData(uarray) ;
+				break ;
+			case 'hevc' :
+				this.pushHevcData(uarray) ;
+				break ;
+		}
+	}
 	
-	pushH264data( uarray ) {
-		const units = this.getH264units(uarray) ;
+	pushAvcData( uarray ) {
+		const units = this.getNalUnits(uarray) ;
 		
 		// NOTE 29/09
 		// requirement :
@@ -144,16 +157,17 @@ class H264adapter {
 		let nbVCL = 0 ;
 		for( let i=0 ; i<units.length ; i++ ) {
 			const objNalu = units[i] ;
-			if( !this.isH264forwardNAL(objNalu) ) {
+			if( !this.isAvcForwardNAL(objNalu) ) {
 				continue ;
 			}
 			
-			this.videoTrack.forwardNals.push({
-				runningTs: this.runningTs,
-				isKey: (objNalu.type==5),
-				data: objNalu.data
-			});
-			if( this.isH264videoframeNAL(objNalu) ) {
+			if( this.isAvcVideoframeNAL(objNalu) ) {
+				this.videoTrack.forwardNals.push({
+					runningTs: this.runningTs,
+					isKey: (objNalu.type==5),
+					data: objNalu.data
+				});
+				
 				nbVCL++ ;
 			}
 			
@@ -161,11 +175,22 @@ class H264adapter {
 			if( !this.isSourceCreated ) {
 				switch( objNalu.type ) {
 					case 7 : // SPS
-						const trackInfo = this.extractH264info( objNalu ) ;
+						var codecarray = objNalu.data.subarray(1, 4);
+						var codecstring = 'avc1.';
+						for (var j = 0; j < 3; j++) {
+							var h = codecarray[j].toString(16);
+							if (h.length < 2) {
+								h = '0' + h;
+							}
+							codecstring += h;
+						}
+						
+						const trackInfo = new ExpGolomb(objNalu.data).readSPS() ;
+						
 						this.videoTrack.sps = [objNalu.data] ;
 						this.videoTrack.width = trackInfo.width ;
 						this.videoTrack.height = trackInfo.height ;
-						this.videoTrack.codec = trackInfo.codec ;
+						this.videoTrack.codec = codecstring ;
 						break ;
 					case 8 : // PPS
 						this.videoTrack.pps = [objNalu.data] ;
@@ -203,7 +228,7 @@ class H264adapter {
 			this.countVCL++ ;
 		}
 	}
-	getH264units( uarray ) {
+	getNalUnits( uarray ) {
     var i = 0, len = uarray.byteLength, value, overflow, state = 0; //state = this.avcNaluState;
     var units = [], unit, unitType, lastUnitStart, lastUnitType; 
     while (i < len) {
@@ -227,7 +252,17 @@ class H264adapter {
           if( value === 0) {
             state = 3;
           } else if (value === 1 && i < len) {
-            unitType = uarray[i] & 0x1f;
+				 switch( this.videoFormat ) {
+					 case 'hevc' :
+						unitType = (uarray[i] & 0x7E) >> 1 ;
+						 break ;
+					 case 'avc' :
+						unitType = uarray[i] & 0x1f;
+						break ;
+					 default :
+						 unitType = null ;
+						 break ;
+				 }
             if (lastUnitStart) {
               unit = {data: uarray.subarray(lastUnitStart, i - state - 1), type: lastUnitType}; 
               units.push(unit); 
@@ -252,7 +287,7 @@ class H264adapter {
 
     return units;
 	}
-	isH264forwardNAL( objNalu ) {
+	isAvcForwardNAL( objNalu ) {
 		switch( objNalu.type ) {
 			case 1 :
 			case 5 :
@@ -262,41 +297,21 @@ class H264adapter {
 				return true ;
 			case 7 :
 			case 8 :
+				if( this.isSourceCreated ) {
+					return false ;
+				}
 				return true ;
 			default :
 				return false ;
 		}
 	}
-	isH264videoframeNAL( objNalu ) {
+	isAvcVideoframeNAL( objNalu ) {
 		switch( objNalu.type ) {
 			case 1 :
 			case 5 :
 				return true ;
 			default :
 				return false ;
-		}
-	}
-	extractH264info( objNalu ) {
-		if( objNalu.type == 7 ) {
-				var track = {} ;
-            var expGolombDecoder = new ExpGolomb(objNalu.data);
-            var config = expGolombDecoder.readSPS();
-            track.width = config.width;
-            track.height = config.height;
-            track.sps = [objNalu.data];
-            track.duration = 0; 
-            var codecarray = objNalu.data.subarray(1, 4);
-            var codecstring = 'avc1.';
-            for (var i = 0; i < 3; i++) {
-              var h = codecarray[i].toString(16);
-              if (h.length < 2) {
-                h = '0' + h;
-              }
-              codecstring += h;
-            }
-            track.codec = codecstring;         
-				//console.dir(track) ;
-				return track ;
 		}
 	}
 	

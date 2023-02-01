@@ -80,9 +80,9 @@
 				console.log('testWs') ;
 				//return openFileTest(null) ;
 			}
-			function openFile(fileId) {
+			function openFile(fileId, videoInfo=null) {
 				const wssUrl = '/replay?id='+fileId ;
-				openWss(wssUrl) ;
+				openWss(wssUrl,videoInfo) ;
 			}
 			function openService(serviceId) {
 				const wssUrl = '/play' + (serviceId ? '?id='+serviceId : '') ;
@@ -99,7 +99,7 @@
 				new_uri += loc.pathname + "/"+wsAdr ;
 				return new_uri.replace(/([^:]\/)\/+/g, "$1"); ;
 			}
-			function openWss(wsAdr) {
+			function openWss(wsAdr,videoInfo=null) {
 				const wssAdr = buildWssUrl(wsAdr) ;
 				if( socket == null ) {
 					socket = new WebSocket(wssAdr);
@@ -135,12 +135,12 @@
 							updateCaption() ;
 							
 							if( adapter ) {
-								adapter.pushH264data(new Uint8Array(event.data,0)) ;
+								adapter.pushNalsData(new Uint8Array(event.data,0)) ;
 							}
 						}
 					});
 					
-					adapter = new H264adapter( document.getElementById('tag_video') ) ;
+					adapter = new H264adapter( document.getElementById('tag_video'), videoInfo ) ;
 					adapter.setListenerFn( function({playDelay}) {
 						if( playDelay != null ) {
 							updateCaptionJitter(playDelay) ;
@@ -168,7 +168,7 @@
 								}
 								
 								//console.dir(row) ;
-								htmlTable += '<tr data-type="replay" data-uuid="'+row.id+'">' ;
+								htmlTable += '<tr data-type="replay" data-uuid="'+row.id+'" data-fps="'+row.fps+'" data-format="'+row.format+'">' ;
 								htmlTable += '<td>'+row.id+'</td>' ;
 								htmlTable += '<td class="tcenter">'+format_and_fps+'</td>' ;
 								htmlTable += '<td>'+row.date+'</td>' ;
@@ -280,9 +280,13 @@
 				if( trElement.dataset ) {
 					const dataset = trElement.dataset ;
 					document.getElementById('div_table').style.display = 'none' ;
+					var videoInfo = {
+						fps: parseInt(dataset.fps),
+						format: dataset.format
+					};
 					switch( dataset.type ) {
 						case 'replay' :
-							openFile(dataset.uuid) ;
+							openFile(dataset.uuid, videoInfo) ;
 							break ;
 						case 'play' :
 							openService(dataset.uuid) ;
