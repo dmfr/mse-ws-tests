@@ -21,7 +21,7 @@ const mapOffsets = mapObj['offsets'] ;
 
 let timer ;
 let bufferChunks ;
-const bufferChunksSize = 30 * 3 ; // 10sec
+const bufferChunksSize = videoFps * 3 ; // 10sec
 
 fsPromises.open(filePath).then((fileHandler) => {
 	bufferChunks = [] ;

@@ -15,7 +15,7 @@ if( workerData && workerData.filePath ) {
 
 let timer ;
 let bufferChunks ;
-const bufferChunksSize = 30 * 3 ; // 10sec
+const bufferChunksSize = videoFps * 3 ; // 10sec
 
 let videoreader ;
 
