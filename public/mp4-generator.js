@@ -321,129 +321,129 @@ class MP4 {
 	 var width = track.width,
         height = track.height;
     
-	 var innerC ;
-	 if( fourcc=='avc1' ) {
-    // assemble the SPSs
-    for (i = 0; i < track.sps.length; i++) {
-      data = track.sps[i];
-      len = data.byteLength;
-      sps.push((len >>> 8) & 0xFF);
-      sps.push((len & 0xFF));
-      sps = sps.concat(Array.prototype.slice.call(data)); // SPS
-    }
+	var innerC ;
+	if( fourcc=='avc1' ) {
+		// assemble the SPSs
+		for (i = 0; i < track.sps.length; i++) {
+			data = track.sps[i];
+			len = data.byteLength;
+			sps.push((len >>> 8) & 0xFF);
+			sps.push((len & 0xFF));
+			sps = sps.concat(Array.prototype.slice.call(data)); // SPS
+		}
 
-    // assemble the PPSs
-    for (i = 0; i < track.pps.length; i++) {
-      data = track.pps[i];
-      len = data.byteLength;
-      pps.push((len >>> 8) & 0xFF);
-      pps.push((len & 0xFF));
-      pps = pps.concat(Array.prototype.slice.call(data));
-    }
+		// assemble the PPSs
+		for (i = 0; i < track.pps.length; i++) {
+			data = track.pps[i];
+			len = data.byteLength;
+			pps.push((len >>> 8) & 0xFF);
+			pps.push((len & 0xFF));
+			pps = pps.concat(Array.prototype.slice.call(data));
+		}
 
-    var avcc = MP4.box(MP4.types.avcC, new Uint8Array([
-            0x01,   // version
-            sps[3], // profile
-            sps[4], // profile compat
-            sps[5], // level
-            0xfc | 3, // lengthSizeMinusOne, hard-coded to 4 bytes
-            0xE0 | track.sps.length // 3bit reserved (111) + numOfSequenceParameterSets
-          ].concat(sps).concat([
-            track.pps.length // numOfPictureParameterSets
-          ]).concat(pps))); // "PPS"
-    //console.log('avcc:' + Hex.hexDump(avcc));
-		
+		var avcc = MP4.box(MP4.types.avcC, new Uint8Array([
+					0x01,   // version
+					sps[3], // profile
+					sps[4], // profile compat
+					sps[5], // level
+					0xfc | 3, // lengthSizeMinusOne, hard-coded to 4 bytes
+					0xE0 | track.sps.length // 3bit reserved (111) + numOfSequenceParameterSets
+				].concat(sps).concat([
+					track.pps.length // numOfPictureParameterSets
+				]).concat(pps))); // "PPS"
+		//console.log('avcc:' + Hex.hexDump(avcc));
+			
 		innerC=avcc ;
-	 }
+	}
 		  
 		  
 	if( fourcc=='hvc1' ) {
-		  var hvccVPS = [
-				1 << 7 | 32 & 0x3f,
-				0,1,
-				0,track.vps[0].byteLength
-			].concat(Array.prototype.slice.call(track.vps[0])) ;
-			//console.dir(hvccVPS) ;
-		  var hvccSPS = [
-				1 << 7 | 33 & 0x3f,
-				0,1,
-				0,track.sps[0].byteLength
-			].concat(Array.prototype.slice.call(track.sps[0])) ;
-			//console.dir(hvccSPS) ;
-		  var hvccPPS = [
-				1 << 7 | 34 & 0x3f,
-				0,1,
-				0,track.pps[0].byteLength
-			].concat(Array.prototype.slice.call(track.pps[0])) ;
-			//console.dir(hvccPPS) ;
-				
-		  
-		  var hvcc = MP4.box(MP4.types.hvcC, new  Uint8Array([
-				/* unsigned int(8) configurationVersion = 1; */
-				0x01,
-				
-				/*
-				* unsigned int(2) general_profile_space;
-				* unsigned int(1) general_tier_flag;
-				* unsigned int(5) general_profile_idc;
-				*/
-				( 0 << 6 | 0 << 5 | 1 ),
-				
-				/* unsigned int(32) general_profile_compatibility_flags; */
-				0xff,0xff,0xff,0xff,
-				
-				/* unsigned int(48) general_constraint_indicator_flags; */
-				0xff,0xff,0xff,0xff,0xff,0xff,
-				
-				/* unsigned int(8) general_level_idc; */
-				123,
-				
-				/*
-				* bit(4) reserved = '1111'b;
-				* unsigned int(12) min_spatial_segmentation_idc;
-				*/
-				0xf0, 0x00,
-				
-				/*
-				* bit(6) reserved = '111111'b;
-				* unsigned int(2) parallelismType;
-				*/
-				0 | 0xfc,
-				
-				/*
-				* bit(6) reserved = '111111'b;
-				* unsigned int(2) chromaFormat;
-				*/
-				1 | 0xfc,
-				
-				/*
-				* bit(5) reserved = '11111'b;
-				* unsigned int(3) bitDepthLumaMinus8;
-				*/
-				0 | 0xf8,
-				
-				/*
-				* bit(5) reserved = '11111'b;
-				* unsigned int(3) bitDepthChromaMinus8;
-				*/
-				0 | 0xf8,
-				
-				/* bit(16) avgFrameRate; */
-				0,0,
-				
-				/*
-				* bit(2) constantFrameRate;
-				* bit(3) numTemporalLayers;
-				* bit(1) temporalIdNested;
-				* unsigned int(2) lengthSizeMinusOne;
-				*/
-				(0 << 6 | 0 << 3 | 0 << 2 | 3), // lengthSizeMinusOne, hard-coded to 4 bytes
-				
-				/* unsigned int(8) numOfArrays; */
-				3, // VPS + SPS + PPS
-			].concat(hvccVPS).concat(hvccSPS).concat(hvccPPS)));
-		  //console.dir(hvcc) ;
-		  innerC=hvcc ;
+		var hvccVPS = [
+			1 << 7 | 32 & 0x3f,
+			0,1,
+			0,track.vps[0].byteLength
+		].concat(Array.prototype.slice.call(track.vps[0])) ;
+		//console.dir(hvccVPS) ;
+		var hvccSPS = [
+			1 << 7 | 33 & 0x3f,
+			0,1,
+			0,track.sps[0].byteLength
+		].concat(Array.prototype.slice.call(track.sps[0])) ;
+		//console.dir(hvccSPS) ;
+		var hvccPPS = [
+			1 << 7 | 34 & 0x3f,
+			0,1,
+			0,track.pps[0].byteLength
+		].concat(Array.prototype.slice.call(track.pps[0])) ;
+		//console.dir(hvccPPS) ;
+			
+		
+		var hvcc = MP4.box(MP4.types.hvcC, new  Uint8Array([
+			/* unsigned int(8) configurationVersion = 1; */
+			0x01,
+			
+			/*
+			* unsigned int(2) general_profile_space;
+			* unsigned int(1) general_tier_flag;
+			* unsigned int(5) general_profile_idc;
+			*/
+			( 0 << 6 | 0 << 5 | 1 ),
+			
+			/* unsigned int(32) general_profile_compatibility_flags; */
+			0xff,0xff,0xff,0xff,
+			
+			/* unsigned int(48) general_constraint_indicator_flags; */
+			0xff,0xff,0xff,0xff,0xff,0xff,
+			
+			/* unsigned int(8) general_level_idc; */
+			123,
+			
+			/*
+			* bit(4) reserved = '1111'b;
+			* unsigned int(12) min_spatial_segmentation_idc;
+			*/
+			0xf0, 0x00,
+			
+			/*
+			* bit(6) reserved = '111111'b;
+			* unsigned int(2) parallelismType;
+			*/
+			0 | 0xfc,
+			
+			/*
+			* bit(6) reserved = '111111'b;
+			* unsigned int(2) chromaFormat;
+			*/
+			1 | 0xfc,
+			
+			/*
+			* bit(5) reserved = '11111'b;
+			* unsigned int(3) bitDepthLumaMinus8;
+			*/
+			0 | 0xf8,
+			
+			/*
+			* bit(5) reserved = '11111'b;
+			* unsigned int(3) bitDepthChromaMinus8;
+			*/
+			0 | 0xf8,
+			
+			/* bit(16) avgFrameRate; */
+			0,0,
+			
+			/*
+			* bit(2) constantFrameRate;
+			* bit(3) numTemporalLayers;
+			* bit(1) temporalIdNested;
+			* unsigned int(2) lengthSizeMinusOne;
+			*/
+			(0 << 6 | 0 << 3 | 0 << 2 | 3), // lengthSizeMinusOne, hard-coded to 4 bytes
+			
+			/* unsigned int(8) numOfArrays; */
+			3, // VPS + SPS + PPS
+		].concat(hvccVPS).concat(hvccSPS).concat(hvccPPS)));
+		//console.dir(hvcc) ;
+		innerC=hvcc ;
 	}        
 		  
     return MP4.box(MP4.types[fourcc], new Uint8Array([
