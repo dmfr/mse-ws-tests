@@ -379,23 +379,68 @@ class MP4 {
 				
 		  
 		  var hvcc = MP4.box(MP4.types.hvcC, new  Uint8Array([
-            0x01,   // version
+				/* unsigned int(8) configurationVersion = 1; */
+				0x01,
+				
+				/*
+				* unsigned int(2) general_profile_space;
+				* unsigned int(1) general_tier_flag;
+				* unsigned int(5) general_profile_idc;
+				*/
 				( 0 << 6 | 0 << 5 | 1 ),
+				
+				/* unsigned int(32) general_profile_compatibility_flags; */
 				0xff,0xff,0xff,0xff,
+				
+				/* unsigned int(48) general_constraint_indicator_flags; */
 				0xff,0xff,0xff,0xff,0xff,0xff,
+				
+				/* unsigned int(8) general_level_idc; */
 				123,
+				
+				/*
+				* bit(4) reserved = '1111'b;
+				* unsigned int(12) min_spatial_segmentation_idc;
+				*/
 				0xf0, 0x00,
+				
+				/*
+				* bit(6) reserved = '111111'b;
+				* unsigned int(2) parallelismType;
+				*/
 				0 | 0xfc,
+				
+				/*
+				* bit(6) reserved = '111111'b;
+				* unsigned int(2) chromaFormat;
+				*/
 				1 | 0xfc,
+				
+				/*
+				* bit(5) reserved = '11111'b;
+				* unsigned int(3) bitDepthLumaMinus8;
+				*/
 				0 | 0xf8,
+				
+				/*
+				* bit(5) reserved = '11111'b;
+				* unsigned int(3) bitDepthChromaMinus8;
+				*/
 				0 | 0xf8,
+				
+				/* bit(16) avgFrameRate; */
 				0,0,
-				(0 << 6 | 0 << 3 | 0 << 2 | 3),
-
-				3,
 				
+				/*
+				* bit(2) constantFrameRate;
+				* bit(3) numTemporalLayers;
+				* bit(1) temporalIdNested;
+				* unsigned int(2) lengthSizeMinusOne;
+				*/
+				(0 << 6 | 0 << 3 | 0 << 2 | 3), // lengthSizeMinusOne, hard-coded to 4 bytes
 				
-				
+				/* unsigned int(8) numOfArrays; */
+				3, // VPS + SPS + PPS
 			].concat(hvccVPS).concat(hvccSPS).concat(hvccPPS)));
 		  //console.dir(hvcc) ;
 		  innerC=hvcc ;
