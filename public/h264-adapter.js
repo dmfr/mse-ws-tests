@@ -273,6 +273,10 @@ class H264adapter {
 						this.videoTrack.width = trackInfo.width ;
 						this.videoTrack.height = trackInfo.height ;
 						this.videoTrack.codec = codecArr.join('.') ;
+						
+						this.videoTrack.general_profile_idc = trackInfo.general_profile_idc ;
+						this.videoTrack.general_level_idc = trackInfo.general_level_idc ;
+						this.videoTrack.chroma_format_idc = trackInfo.chroma_format_idc ;
 						break ;
 					case 34 : // PPS
 						this.videoTrack.pps = [objNalu.data] ;

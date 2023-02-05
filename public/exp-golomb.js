@@ -396,7 +396,8 @@ class ExpGolomb {
 			height: height,
 			
 			general_profile_idc: generalProfileIdc,
-			general_level_idc: generalLevelIdc
+			general_level_idc: generalLevelIdc,
+			chroma_format_idc: chromaFormatIdc
 		};
 	}
 

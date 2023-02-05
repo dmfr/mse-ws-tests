@@ -387,7 +387,7 @@ class MP4 {
 			* unsigned int(1) general_tier_flag;
 			* unsigned int(5) general_profile_idc;
 			*/
-			( 0 << 6 | 0 << 5 | 1 ),
+			( 0 << 6 | 0 << 5 | track.general_profile_idc ),
 			
 			/* unsigned int(32) general_profile_compatibility_flags; */
 			0xff,0xff,0xff,0xff,
@@ -396,7 +396,7 @@ class MP4 {
 			0xff,0xff,0xff,0xff,0xff,0xff,
 			
 			/* unsigned int(8) general_level_idc; */
-			123,
+			track.general_level_idc,
 			
 			/*
 			* bit(4) reserved = '1111'b;
@@ -414,7 +414,7 @@ class MP4 {
 			* bit(6) reserved = '111111'b;
 			* unsigned int(2) chromaFormat;
 			*/
-			1 | 0xfc,
+			track.chroma_format_idc | 0xfc,
 			
 			/*
 			* bit(5) reserved = '11111'b;
