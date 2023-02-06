@@ -84,9 +84,9 @@
 				const wssUrl = '/replay?id='+fileId ;
 				openWss(wssUrl,videoInfo) ;
 			}
-			function openService(serviceId) {
+			function openService(serviceId, videoInfo=null) {
 				const wssUrl = '/play' + (serviceId ? '?id='+serviceId : '') ;
-				openWss(wssUrl) ;
+				openWss(wssUrl,videoInfo) ;
 			}
 			function buildWssUrl(wsAdr) {
 				var loc = window.location, new_uri;
@@ -191,9 +191,10 @@
 							htmlTable += '<table>' ;
 							data.forEach((row) => {
 								//console.dir(row) ;
-								htmlTable += '<tr data-type="play" data-uuid="'+row.id+'">' ;
+								htmlTable += '<tr data-type="play" data-uuid="'+row.id+'" data-format="'+row.format+'">' ;
 								htmlTable += '<td>'+"LIVE"+'</td>' ;
 								htmlTable += '<td>'+row.id+'</td>' ;
+								htmlTable += '<td class="tcenter">'+row.format+'</td>' ;
 								if( row.remoteAddress ) {
 									htmlTable += '<td>'+row.remoteAddress+'</td>' ;
 								}
@@ -281,7 +282,7 @@
 					const dataset = trElement.dataset ;
 					document.getElementById('div_table').style.display = 'none' ;
 					var videoInfo = {
-						fps: parseInt(dataset.fps),
+						fps: dataset.fps ? parseInt(dataset.fps) : null,
 						format: dataset.format
 					};
 					switch( dataset.type ) {
@@ -289,7 +290,7 @@
 							openFile(dataset.uuid, videoInfo) ;
 							break ;
 						case 'play' :
-							openService(dataset.uuid) ;
+							openService(dataset.uuid, videoInfo) ;
 							break ;
 					}
 				}

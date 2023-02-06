@@ -3,7 +3,9 @@ import MP4 from './mp4-generator.js' ;
 
 class H264adapter {
 	
-	constructor(videoEl, videoInfo={}) {
+	constructor(videoEl, videoInfo) {
+		videoInfo = videoInfo || {} ;
+		
 		this.browserIsChrome = !!window.chrome ;
 		this.browserIsFirefox = (typeof InstallTrigger !== 'undefined') ;
 		this.browserEnableFasterFps = !this.browserIsFirefox ;

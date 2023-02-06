@@ -114,7 +114,9 @@ server.on('request',function request(request,response) {
 				list.push({
 					id: meta.id,
 					remoteAddress: ws.remoteAddress,
-					initTs: ws.init_ts
+					initTs: ws.init_ts,
+				  
+					format: ws.videoFormat,
 				})
 			}) ;
 			list.sort( function compare( a, b ) {
@@ -163,9 +165,18 @@ server.on('upgrade', function upgrade(request, socket, head) {
 	
 	switch( pathname ) {
 		case '/record' :
+			const videoFormat = (query && query.format) ? query.format : 'avc' ;
+			switch( videoFormat ) {
+				case 'avc' :
+				case 'hevc' :
+					break ;
+				default :
+					return socket.destroy() ;
+			}
 			wss.handleUpgrade(request, socket, head, function done(ws) {
 				ws.isRecordSource = true ;
 				ws.remoteAddress = socket.remoteAddress ;
+				ws.videoFormat = videoFormat ;
 				wss.emit('connection', ws, request);
 			});
 			break ;
@@ -282,7 +293,18 @@ function registerService(ws) {
 		} ;
 		writeFile(filepathDat,JSON.stringify(obj),()=>{}) ;
 		
-		const filename = id+'.h264',
+		let fileExtension ;
+		switch( ws.videoFormat ) {
+			case 'hevc' :
+				fileExtension = 'hevc' ;
+				break ;
+			case 'avc' :
+			default :
+				fileExtension = 'h264' ;
+				break ;
+		}
+		
+		const filename = id+'.'+fileExtension,
 			filepath = pathSave+'/'+filename ;
 		ws.writePath = filepath ;
 		ws.writeStream = createWriteStream(filepath) ;
