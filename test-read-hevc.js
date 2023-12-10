@@ -3,7 +3,9 @@ import * as fs from 'fs';
 import * as fsPromises from 'fs/promises';
 
 import * as hevcTools from './server-hevc-tools.js' ;
+
 import ExpGolomb from './server-lib-h264-ExpGolomb.js' ;
+import h264reader from './server-lib-h264reader.js' ;
 
 
 
@@ -105,10 +107,16 @@ async function readHandler( fileHandler ) {
 
 
 	
-fsPromises.open('/tmp/test.hevc').then( (fileHandler) => {
+fsPromises.open('/tmp/test9.hevc').then( (fileHandler) => {
    
     console.log("opened!") ;
 	 console.dir(fileHandler) ;
+	 
+	 const videoreader = new h264reader(fileHandler,h264reader.getVideoFormatFromPath('/tmp/test.hevc')) ;
+	 videoreader.getSPSdimensions().then( (obj) => {
+		 console.dir(obj) ;
+	 }) ;
+	 return ;
 	 
 	const rsize = 1048576 ;
 	const buffer = Buffer.alloc(rsize) ;
