@@ -139,6 +139,25 @@ class H264adapter {
 	}
 	
 	
+	pushData( uarray ) {
+		switch( uarray[0] ) {
+			case 0x01 : // private byte prefix for video
+				uarray = uarray.subarray(1,uarray.length) ;
+				return this.pushNalsData(uarray) ;
+			case 0x00 : // AVC/HEVC NALs starts with 0x00
+				return this.pushNalsData(uarray) ;
+				
+			case 0x02 : // private byte prefix for audio
+				uarray = uarray.subarray(1,uarray.length) ;
+				return this.pushAdtsData(uarray) ;
+			case 0xFF : // ADTS starts with 0xFF
+				return this.pushAdtsData(uarray) ;
+				
+			default:
+				return ;
+		}
+	}
+	
 	pushNalsData( uarray ) {
 		switch( this.videoFormat ) {
 			case 'avc' :
@@ -302,6 +321,10 @@ class H264adapter {
 			this.runningTs += this.H264_timebaseRun ;
 			this.countVCL++ ;
 		}
+	}
+	
+	pushAdtsData( uarray ) {
+		
 	}
 	
 	getNalUnits( uarray ) {
