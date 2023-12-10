@@ -416,6 +416,7 @@ function ECcam_open(camDesc) {
 		});
 		ws.isECcam = true ;
 		ws.remoteAddress = camDesc.ip ;
+		ws.videoFormat = 'avc' ;
 		
 		camDesc.runningWs = ws ;
 		registerService(ws) ;
