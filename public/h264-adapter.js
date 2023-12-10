@@ -29,7 +29,7 @@ class H264adapter {
 		
 		this.H264_fps = this.videoFps ; // var ?
 		this.H264_timescale = 90000 ;
-		this.H264_timebase = Math.floor(this.H264_timescale / (this.H264_fps + (this.browserEnableFasterFps ? 0.2 : 0))) ;
+		this.H264_timebase = Math.floor(this.H264_timescale / (this.H264_fps + (this.browserEnableFasterFps ? 1 : 0))) ;
 		this.H264_timebaseRun = this.H264_timebase ;
 		
 		this.videoTrack = {
@@ -97,7 +97,7 @@ class H264adapter {
 // 				}
 				let newH264_timebaseRun ;
 				if( playDelay >= 0.25 ) {
-					newH264_timebaseRun = Math.floor(this.H264_timebase / 1.5) ;
+					newH264_timebaseRun = Math.floor(this.H264_timebase / 2) ;
 				} else if( playDelay < 0.1 ) {
 					newH264_timebaseRun = this.H264_timebase ;
 				}
