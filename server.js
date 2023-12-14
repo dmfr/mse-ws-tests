@@ -59,18 +59,13 @@ wss.on('connection', function connection(ws) {
 		console.log('register client '+id+' for '+services.get(ws.targetServiceWs).id) ;
 		clients.set(ws,{id,type}) ;
 	}
-	if( ws.targetPath ) {
+	if( ws.targetReplayStreams ) {
 		type = 'file' ;
-		console.log('register client '+id+' for '+ws.targetPath) ;
+		console.log('register client '+id+' for replay file='+ws.targetFileId) ;
 		clients.set(ws,{id,type}) ;
 		
-		const filePath = ws.targetPath ;
-		const filePathMap = ws.targetPathMap ;
-		const videoFps = ws.targetVideoFps ;
-		const workerJs = filePathMap ? "./server-fileworker-mapped.js" : "./server-fileworker-unmapped.js" ;
-		
 		// setup worker
-		const worker = new Worker(workerJs, {workerData:{filePath:filePath, filePathMap:filePathMap, videoFps:videoFps}});
+		const worker = new Worker("./server-fileworker-replay.js", {workerData:{streams:JSON.stringify(ws.targetReplayStreams)}});
 		worker.on("message", function(message){
 			ws.send(message.data) ;
 		});
@@ -220,14 +215,30 @@ server.on('upgrade', function upgrade(request, socket, head) {
 				if( message.length != 1 ) {
 					socket.destroy() ;
 				}
+				const streamDesc = message[0] ;
+				let replayStreams = [] ;
+				if( streamDesc.file_stream ) {
+					replayStreams.push({
+						id: 0,
+						type: 'video',
+						filepath: pathSave+'/'+streamDesc.file_stream,
+						offsets: streamDesc.offsets,
+						videoFps: streamDesc.fps,
+					})
+					if( streamDesc.file_audio ) {
+						replayStreams.push({
+							id: 1,
+							type: 'audio',
+							filepath: pathSave+'/'+streamDesc.file_audio,
+							offsets: null,
+							audioFps: null,
+						})
+					}
+				}
+				//console.dir(replayStreams) ;
 				wss.handleUpgrade(request, socket, head, function done(ws) {
-					ws.targetPath = pathSave + '/' + message[0].file_stream ;
-					if( message[0].file_map ) {
-						ws.targetPathMap = pathSave + '/' + message[0].file_map ;
-					}
-					if( message[0].fps ) {
-						ws.targetVideoFps = message[0].fps ;
-					}
+					ws.targetFileId = fileId ;
+					ws.targetReplayStreams = replayStreams ;
 					wss.emit('connection', ws, request);
 				});
 			});
