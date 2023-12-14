@@ -175,7 +175,7 @@ class H264adapter {
 		// NOTE 29/09
 		// requirement :
 		// one H264 message = one video frame
-		let nbVCL = 0 ;
+		let hasVCL = false ;
 		for( let i=0 ; i<units.length ; i++ ) {
 			const objNalu = units[i] ;
 			if( !this.isAvcForwardNAL(objNalu) ) {
@@ -189,7 +189,7 @@ class H264adapter {
 					data: objNalu.data
 				});
 				
-				nbVCL++ ;
+				hasVCL=true ;
 			}
 			
 			// get datas for init
@@ -231,7 +231,7 @@ class H264adapter {
 		if( this.isSourceCreated ) {
 			this.buildMP4segments() ; // MOOF + MDAT
 		}
-		if( nbVCL > 0 ) {
+		if( hasVCL ) {
 			this.runningTs += this.H264_timebaseRun ;
 			
 			/*
@@ -256,7 +256,7 @@ class H264adapter {
 		// NOTE 29/09
 		// requirement :
 		// one H264 message = one video frame
-		let nbVCL = 0 ;
+		let hasVCL = false ;
 		for( let i=0 ; i<units.length ; i++ ) {
 			const objNalu = units[i] ;
 			if( !this.isHevcForwardNAL(objNalu) ) {
@@ -270,7 +270,7 @@ class H264adapter {
 					data: objNalu.data
 				});
 				
-				nbVCL++ ;
+				hasVCL=true ;
 			}
 			
 			// get datas for init
@@ -317,7 +317,7 @@ class H264adapter {
 		if( this.isSourceCreated ) {
 			this.buildMP4segments() ; // MOOF + MDAT
 		}
-		if( nbVCL > 0 ) {
+		if( hasVCL ) {
 			this.runningTs += this.H264_timebaseRun ;
 			this.countVCL++ ;
 		}
