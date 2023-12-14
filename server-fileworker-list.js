@@ -42,7 +42,7 @@ async function buildFilesList( filestore_path ) {
 			return ;
 		}
 		if( !filesList.hasOwnProperty(fileUUID) ) {
-			filesList[fileUUID] = {id: fileUUID} ;
+			filesList[fileUUID] = {id: fileUUID, size: 0} ;
 		}
 		if( path.extname(file) == '.dat' ) {
 			const binaryDat = await fsPromises.readFile(filestore_path + '/' + file),
@@ -55,6 +55,9 @@ async function buildFilesList( filestore_path ) {
 				jsonMap = JSON.parse(binaryMap) ;
 			filesList[fileUUID]['videosize'] = jsonMap.size ;
 			filesList[fileUUID]['fps'] = jsonMap.fps || 30 ;
+			if( requestedFileId ) {
+				filesList[fileUUID]['offsets'] = jsonMap.offsets || null ;
+			}
 		}
 		if( ['.h264','.avc','.hevc'].includes(path.extname(file)) ) {
 			filesList[fileUUID]['file_stream'] = file ;
@@ -62,8 +65,13 @@ async function buildFilesList( filestore_path ) {
 			if( !filesList[fileUUID].hasOwnProperty('date') ) {
 				filesList[fileUUID]['date'] = infos.mtime.toISOString() ;
 			}
-			filesList[fileUUID]['size'] = infos.size ;
+			filesList[fileUUID]['size']+= infos.size ;
 			filesList[fileUUID]['format'] = h264reader.getVideoFormatFromPath(file) ;
+		}
+		if( ['.aac'].includes(path.extname(file)) ) {
+			filesList[fileUUID]['file_audio'] = file ;
+			const infos = await fsPromises.stat(filestore_path + '/' + file) ;
+			filesList[fileUUID]['size']+= infos.size ;
 		}
 	}));
 	
