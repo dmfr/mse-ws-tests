@@ -166,9 +166,10 @@
 								if( row.fps && (row.fps!=30) ) {
 									format_and_fps += ' / '+row.fps+'fps' ;
 								}
+								const hasAudio = ((row.file_audio!=null) ? 1 : 0) ;
 								
 								//console.dir(row) ;
-								htmlTable += '<tr data-type="replay" data-uuid="'+row.id+'" data-fps="'+row.fps+'" data-format="'+row.format+'">' ;
+								htmlTable += '<tr data-type="replay" data-uuid="'+row.id+'" data-fps="'+row.fps+'" data-format="'+row.format+'" data-audio="'+hasAudio+'">' ;
 								htmlTable += '<td>'+row.id+'</td>' ;
 								htmlTable += '<td class="tcenter">'+format_and_fps+'</td>' ;
 								htmlTable += '<td>'+row.date+'</td>' ;
@@ -283,7 +284,8 @@
 					document.getElementById('div_table').style.display = 'none' ;
 					var videoInfo = {
 						fps: dataset.fps ? parseInt(dataset.fps) : null,
-						format: dataset.format
+						format: dataset.format,
+						audio: (dataset.audio==1),
 					};
 					switch( dataset.type ) {
 						case 'replay' :
