@@ -32,22 +32,43 @@ class H264adapter {
 		this.H264_timebase = Math.floor(this.H264_timescale / (this.H264_fps + (this.browserEnableFasterFps ? 1 : 0))) ;
 		this.H264_timebaseRun = this.H264_timebase ;
 		
-		this.videoTrack = {
-			type: 'video',
-			container: 'video/mp4',
-			
-			codec: null,
-			width: null,
-			height: null, 
-			sps: null,
-			pps: null,
-			
-			timescale: this.H264_timescale,
-			duration: 0,
-			id: 1,
-			
-			forwardNals: []
-		};
+		if( true ) {
+			this.videoTrack = {
+				type: 'video',
+				
+				ready: false,
+				
+				codec: null,
+				width: null,
+				height: null, 
+				sps: null,
+				pps: null,
+				
+				timescale: this.H264_timescale,
+				duration: 0,
+				id: 1,
+				
+				forwardNals: []
+			};
+		}
+		if( videoInfo.audio ) {
+			this.audioTrack = {
+				type: 'audio',
+				
+				ready: false,
+				
+				codec: 'mp4a.40.2',
+				channelCount: 1,
+				audiosamplerate: 44100,
+				config:[],
+				
+				timescale: 44100,
+				duration: 0,
+				id: 2,
+				
+				forwardNals: []
+			};
+		}
 		this.runningTs = 0 ;
 		this.countVCL = 0 ;
 		
@@ -219,11 +240,12 @@ class H264adapter {
 				}
 			}
 			if( !this.isSourceCreated && this.videoTrack.pps && this.videoTrack.sps ) {
+				this.videoTrack.ready = true ;
 				// PPS+SPS now in track
 				// => create source + initialize MP4
 				// ==> stop discarding VCL NAL(s)
 				// ===> so next NAL(s) from same message (IDR...) will be queued
-				this.createSourceBuffer() ;
+				this.maybeCreateSourceBuffer() ;
 				this.buildMP4segments() ; // MOOV
 				continue ;
 			}
@@ -305,11 +327,12 @@ class H264adapter {
 				}
 			}
 			if( !this.isSourceCreated && this.videoTrack.pps && this.videoTrack.sps && this.videoTrack.vps ) {
+				this.videoTrack.ready = true ;
 				// PPS+SPS+VPS now in track
 				// => create source + initialize MP4
 				// ==> stop discarding VCL NAL(s)
 				// ===> so next NAL(s) from same message (IDR...) will be queued
-				this.createSourceBuffer() ;
+				this.maybeCreateSourceBuffer() ;
 				this.buildMP4segments() ; // MOOV
 				continue ;
 			}
@@ -432,8 +455,22 @@ class H264adapter {
 		}
 	}
 	
-	createSourceBuffer() {
-		const mimeType = 'video/mp4;codecs='+this.videoTrack.codec ;
+	maybeCreateSourceBuffer() {
+		if( this.videoTrack && !this.videoTrack.ready ) {
+			return ;
+		}
+		if( this.audioTrack && !this.audioTrack.ready ) {
+			return ;
+		}
+		
+		var codecs = [] ;
+		if( this.videoTrack ) {
+			codecs.push(this.videoTrack.codec) ;
+		}
+		if( this.audioTrack ) {
+			codecs.push(this.audioTrack.codec) ;
+		}
+		const mimeType = 'video/mp4;codecs='+codecs.join(',') ;
 		try {
 			this.sourceBuffer = this.mediaSource.addSourceBuffer(mimeType);
 			this.sourceBuffer.addEventListener('updateend', this.onsbue);
@@ -462,7 +499,14 @@ class H264adapter {
 		}
 		if( this.isSourceCreated && !this.isMP4initialized ) {
 			//MP4.init() ;
-			var mp4segment = MP4.initSegment([this.videoTrack]) ;
+			var tracks = [] ;
+			if( this.videoTrack ) {
+				tracks.push(this.videoTrack) ;
+			}
+			if( this.audioTrack ) {
+				tracks.push(this.audioTrack) ;
+			}
+			var mp4segment = MP4.initSegment(tracks) ;
 			//console.dir(mp4segment) ;
 			
 			this.MP4segmentsQueue.push( mp4segment ) ;
