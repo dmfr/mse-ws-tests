@@ -1,5 +1,6 @@
 import ExpGolomb from './exp-golomb.js';
 import MP4 from './mp4-generator.js' ;
+import * as adts from './adts-utils.js' ;
 
 class H264adapter {
 	
@@ -347,6 +348,35 @@ class H264adapter {
 	}
 	
 	pushAdtsData( uarray ) {
+		const hasOneFrame = true ;
+		if( !this.isSourceCreated ) {
+			const audioConfig = adts.getAudioConfig( uarray,0 ) ;
+			
+			this.audioTrack.audiosamplerate = audioConfig.samplerate ;
+			this.audioTrack.config = audioConfig.config ;
+			this.audioTrack.codec = audioConfig.codec ;
+			this.audioTrack.channelCount = audioConfig.channelCount ;
+			this.audioTrack.ready = true ;
+			
+			this.maybeCreateSourceBuffer() ;
+			this.buildMP4segments() ;
+		}
+		if( this.isSourceCreated ) {
+			console.log( 'sound frame') ;
+			console.log( uarray.byteLength ) ;
+			const headerLength = adts.getHeaderLength(uarray,0);
+			console.log( headerLength ) ;
+			// retrieve frame size
+			const frameLength = adts.getFullFrameLength(uarray,0);
+			console.log( frameLength ) ;
+			
+			this.audioTrack.forwardNals.push({
+				runningTs: this.audioTrack.runningTs,
+				data: uarray.subarray(headerLength,frameLength),
+			});
+			this.audioTrack.runningTs += 1024 ;
+			this.buildMP4segments() ; // MOOF + MDAT
+		}
 		
 	}
 	
