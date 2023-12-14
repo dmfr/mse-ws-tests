@@ -293,21 +293,22 @@ function registerService(ws) {
 		} ;
 		writeFile(filepathDat,JSON.stringify(obj),()=>{}) ;
 		
-		let fileExtension ;
+		let fileExtensionVideo ;
 		switch( ws.videoFormat ) {
 			case 'hevc' :
-				fileExtension = 'hevc' ;
+				fileExtensionVideo = 'hevc' ;
 				break ;
 			case 'avc' :
 			default :
-				fileExtension = 'h264' ;
+				fileExtensionVideo = 'h264' ;
 				break ;
 		}
+		const fileExtensionAudio = 'aac' ;
 		
-		const filename = id+'.'+fileExtension,
-			filepath = pathSave+'/'+filename ;
-		ws.writePath = filepath ;
-		ws.writeStream = createWriteStream(filepath) ;
+		ws.writePathVideo = pathSave+'/'+id+'.'+fileExtensionVideo ;
+		ws.writeStreamVideo = createWriteStream(ws.writePathVideo) ;
+		ws.writePathAudio = pathSave+'/'+id+'.'+fileExtensionAudio ;
+		ws.writeStreamAudio = createWriteStream(ws.writePathAudio) ;
 	}
 	ws.on('message', function message(data) {
 		ws.last_ts = Date.now() ;
@@ -337,19 +338,49 @@ function registerService(ws) {
 				clientWs.send(data) ;
 			}
 		});
-		if( ws.writeStream ) {
-			ws.writeStream.write(new Uint8Array(data)) ;
+		data = new Uint8Array(data) ;
+		console.dir(data);
+		var dataType = null ;
+		switch( data[0] ) {
+			case 0x01 : // private byte prefix for video (unused)
+				data = data.subarray(1,data.byteLength) ;
+				dataType = 'video' ;
+				break ;
+			case 0x00 : // AVC/HEVC NALs starts with 0x00
+				dataType = 'video' ;
+				break ;
+				
+			case 0x02 : // private byte prefix for audio (unused)
+				data = data.subarray(1,data.byteLength) ;
+				dataType = 'audio' ;
+				break ;
+			case 0xFF : // ADTS starts with 0xFF
+				dataType = 'audio' ;
+				break ;
+				
+			default:
+				break ;
+		}
+		if( (dataType=='video') && ws.writeStreamVideo ) {
+			ws.writeStreamVideo.write(data) ;
+		}
+		if( (dataType=='audio') && ws.writeStreamAudio ) {
+			ws.writeStreamAudio.write(data) ;
 		}
 	});
 	ws.on('close', function close() {
-		if( ws.writeStream ) {
-			ws.writeStream.end() ;
-			ws.writeStream = null ;
+		if( ws.writeStreamVideo ) {
+			ws.writeStreamVideo.end() ;
+			ws.writeStreamVideo = null ;
+		}
+		if( ws.writeStreamAudio ) {
+			ws.writeStreamAudio.end() ;
+			ws.writeStreamAudio = null ;
 		}
 		console.log('unregister service '+id) ;
 		services.delete(ws) ;
-		if( ws.writePath ) {
-			const tmpIndexWorker = new Worker("./server-fileworker-buildindex.js", {workerData:{filePath:ws.writePath}});
+		if( ws.writePathVideo ) {
+			const tmpIndexWorker = new Worker("./server-fileworker-buildindex.js", {workerData:{filePath:ws.writePathVideo}});
 		}
 	});
 	ws.on('error', function error() {
