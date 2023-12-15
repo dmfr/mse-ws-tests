@@ -143,7 +143,7 @@
 					adapter = new H264adapter( document.getElementById('tag_video'), videoInfo ) ;
 					adapter.setListenerFn( function(obj) {
 						if( obj.playDelay != null ) {
-							updateCaptionJitter(playDelay) ;
+							updateCaptionJitter(obj.playDelay) ;
 						}
 						if( obj.debug != null ) {
 							console.dir(obj.debug) ;

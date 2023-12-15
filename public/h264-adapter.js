@@ -38,7 +38,7 @@ class H264adapter {
 		
 		this.MP4_timescale = 90000 ;
 		
-		if( false ) {
+		if( true ) {
 			this.videoTrack = {
 				type: 'video',
 				
@@ -51,10 +51,13 @@ class H264adapter {
 				pps: null,
 				
 				timescale: this.MP4_timescale,
-				frameDuration: this.MP4_timescale * (1 / this.H264_fps),
+				frameDuration: this.MP4_timescale * (1 / (this.H264_fps+0)),
 				frameCount: 0,
 				duration: 0,
 				id: 1,
+				
+				nextMP4sequence: 0,
+				nextRunningTS: 0,
 				
 				forwardNals: []
 			};
@@ -76,7 +79,10 @@ class H264adapter {
 				duration: 0,
 				id: 2,
 				
-				forwardNals: []
+				nextMP4sequence: 0,
+				nextRunningTS: 0,
+				
+				forwardFrames: []
 			};
 		}
 		this.runningTs = 0 ;
@@ -192,7 +198,6 @@ class H264adapter {
 	}
 	
 	pushNalsData( uarray ) {
-		return ;
 		switch( this.videoFormat ) {
 			case 'avc' :
 				this.pushAvcData(uarray) ;
@@ -218,7 +223,7 @@ class H264adapter {
 			
 			if( this.isAvcVideoframeNAL(objNalu) ) {
 				this.videoTrack.forwardNals.push({
-					runningTs: this.runningTs,
+					runningTs: this.videoTrack.nextRunningTS,
 					isKey: (objNalu.type==5),
 					data: objNalu.data
 				});
@@ -282,6 +287,7 @@ class H264adapter {
 			}
 			*/
 			this.countVCL++ ;
+			this.videoTrack.nextRunningTS += this.videoTrack.frameDuration ;
 			this.videoTrack.frameCount++ ;
 		}
 	}
@@ -300,8 +306,9 @@ class H264adapter {
 			}
 			
 			if( this.isHevcVideoframeNAL(objNalu) ) {
+				console.log( 'adding video ts='+this.videoTrack.nextRunningTS/this.MP4_timescale ) ;
 				this.videoTrack.forwardNals.push({
-					runningTs: this.videoTrack.frameCount * this.videoTrack.frameDuration,
+					runningTs: this.videoTrack.nextRunningTS,
 					isKey: ((objNalu.type >= 16) && (objNalu.type < 24)),
 					data: objNalu.data
 				});
@@ -358,6 +365,7 @@ class H264adapter {
 			this.runningTs += this.H264_timebaseRun ;
 			this.countVCL++ ;
 			this.videoTrack.frameCount++ ;
+			this.videoTrack.nextRunningTS += this.videoTrack.frameDuration ;
 		}
 	}
 	
@@ -376,18 +384,15 @@ class H264adapter {
 			this.buildMP4segments() ;
 		}
 		if( this.isSourceCreated ) {
-			console.log( 'sound frame') ;
-			console.log( uarray.byteLength ) ;
 			const headerLength = adts.getHeaderLength(uarray,0);
-			console.log( headerLength ) ;
-			// retrieve frame size
 			const frameLength = adts.getFullFrameLength(uarray,0);
-			console.log( frameLength ) ;
 			
-			this.audioTrack.forwardNals.push({
-				runningTs: this.audioTrack.frameCount * this.audioTrack.frameDuration,
+			console.log( 'adding audio ts='+this.audioTrack.nextRunningTS/this.MP4_timescale ) ;
+			this.audioTrack.forwardFrames.push({
+				runningTs: this.audioTrack.nextRunningTS,
 				data: uarray.subarray(headerLength,frameLength),
 			});
+			this.audioTrack.nextRunningTS += this.audioTrack.frameDuration ;
 			this.audioTrack.frameCount++ ;
 			this.buildMP4segments() ; // MOOF + MDAT
 		}
@@ -514,7 +519,7 @@ class H264adapter {
 		if( this.audioTrack ) {
 			codecs.push(this.audioTrack.codec) ;
 		}
-		const mimeType = 'audio/mp4;codecs='+codecs.join(',') ;
+		const mimeType = 'video/mp4;codecs='+codecs.join(',') ;
 		try {
 			this.sourceBuffer = this.mediaSource.addSourceBuffer(mimeType);
 			this.sourceBuffer.addEventListener('updateend', this.onsbue);
@@ -563,13 +568,16 @@ class H264adapter {
 		if( !this.isMP4initialized ) {
 			return ;
 		}
-		//if( this.videoTrack.forwardNals.length == 0 ) {
-			//return ;
-		//}
 		
-		if( this.videoTrack ) {
-		console.log('forward video nal count '+this.videoTrack.forwardNals.length) ;
+		/*
+		if( this.videoTrack && (this.videoTrack.forwardNals.length == 0) ) {
+			return ;
 		}
+		if( this.audioTrack && (this.audioTrack.forwardNals.length == 0) ) {
+			return ;
+		}
+		*/
+		
 		if( this.videoTrack && this.videoTrack.forwardNals.length > 0 ) {
 		var forwardNals = this.videoTrack.forwardNals,
 			runningTs = forwardNals[0].runningTs,
@@ -613,8 +621,7 @@ class H264adapter {
 				isNonSync : isKey ? 0 : 1
 			}
 		} ;
-		let moof = MP4.moof(this.MP4sequences, runningTs  , {id:1, samples:[moofObj]});
-		this.MP4sequences++ ;
+		let moof = MP4.moof(this.videoTrack.nextMP4sequence++, runningTs  , {id:1, samples:[moofObj]});
 		
 		/*
 		this.MP4segmentsQueue.push( moof ) ;
@@ -625,38 +632,27 @@ class H264adapter {
 		mergedArray.set(mdat, moof.length);
 		this.MP4segmentsQueue.push( mergedArray ) ;
 		}
-		if( this.audioTrack ) {
-		console.log('forward audio nal count '+this.audioTrack.forwardNals.length) ;
-		}
-		if( this.audioTrack && this.audioTrack.forwardNals.length > 0 ) {
-		var forwardNals = this.audioTrack.forwardNals,
-			runningTs = forwardNals[0].runningTs,
-			isKey = false,
-			length = 0 ;
-		for (let i = 0; i < forwardNals.length; i++) {
-			length += forwardNals[i].data.byteLength ;
-			if( forwardNals[i].isKey ) {
-				isKey = true ;
-			}
-		}
+		
+		if( this.audioTrack && this.audioTrack.forwardFrames.length > 0 ) {
+		const forwardFrames = this.audioTrack.forwardFrames ;
+		for( let i = 0; i < forwardFrames.length; i++ ) {
+		const forwardFrame = forwardFrames[i],
+			runningTs = forwardFrame.runningTs,
+			length = forwardFrame.data.byteLength ;
+		
+		
+		
+		
 		/* concatenate the video data and construct the mdat in place
 			(need 8 more bytes to fill length and mpdat type) */
-		let mdat = new Uint8Array(length + (4 * forwardNals.length) + 8);
+		let mdat = new Uint8Array(length + 8);
 		let view = new DataView(mdat.buffer);
 		let offset = 0, mp4SampleLength = 0 ;
 		view.setUint32(0, mdat.byteLength);
 		offset += 8 ;
 		mdat.set(MP4.types.mdat, 4);
-		for (let i = 0; i < forwardNals.length; i++) {
-			let unit = forwardNals[i] ;
-			view.setUint32(offset, unit.data.byteLength);
-			offset += 4;
-			mdat.set(unit.data, offset);
-			offset += unit.data.byteLength;
-			
-			mp4SampleLength += 4 + unit.data.byteLength;
-		}
-		this.audioTrack.forwardNals = [] ;		
+		mdat.set(forwardFrame.data, offset);
+		mp4SampleLength += forwardFrame.data.byteLength;
 		
 		var moofObj = {
 			size: mp4SampleLength,  
@@ -672,8 +668,7 @@ class H264adapter {
 			}
 		} ;
 		console.dir(moofObj) ;
-		let moof = MP4.moof(this.MP4sequences, runningTs  , {id:2, samples:[moofObj]});
-		this.MP4sequences++ ;
+		let moof = MP4.moof(this.audioTrack.nextMP4sequence++, runningTs  , {id:2, type:'audio', samples:[moofObj]});
 		
 		/*
 		this.MP4segmentsQueue.push( moof ) ;
@@ -683,6 +678,8 @@ class H264adapter {
 		mergedArray.set(moof);
 		mergedArray.set(mdat, moof.length);
 		this.MP4segmentsQueue.push( mergedArray ) ;
+		}
+		this.audioTrack.forwardFrames = [] ;
 		}
 		
 		
@@ -699,22 +696,31 @@ class H264adapter {
 			return ;
 		}
 		
-			if( this._listenerFn ) {
-				console.log('push') ;
-		while( MP4segmentsQueue.length > 0 ) {
-			this._listenerFn( {debug: MP4segmentsQueue.shift()} ) ;
-
-			
-		}
-		return ;
-			}
-		
-		return ;
-		
 		this.isMP4appending = true ;
 		
-		var mp4nextSegment = MP4segmentsQueue.shift() ;
-		this.sourceBuffer.appendBuffer(mp4nextSegment);
+		if( true ) {
+			this.sourceBuffer.appendBuffer(MP4segmentsQueue.shift());
+			return ;
+		}
+		
+		/*
+		var appendBuffers = [] ;
+		let shiftedBuffer ;
+		let size = 0 ;
+		while( MP4segmentsQueue.length > 0 ) {
+			shiftedBuffer = MP4segmentsQueue.shift() ;
+			size += shiftedBuffer.byteLength ;
+			appendBuffers.push( shiftedBuffer ) ;
+		}
+		console.log( 'multiappend size='+appendBuffers.length ) ;
+		const mp4nextSegment = new Uint8Array(size) ;
+		let offset = 0 ;
+		for( const element of appendBuffers) {
+			mp4nextSegment.set(element,offset) ;
+			offset += element.byteLength ;
+		}
+		this.sourceBuffer.appendBuffer(mp4nextSegment) ;
+		*/
 	}
 }
 export default H264adapter ;
