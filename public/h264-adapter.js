@@ -38,7 +38,7 @@ class H264adapter {
 		
 		this.MP4_timescale = 90000 ;
 		
-		if( true ) {
+		if( false ) {
 			this.videoTrack = {
 				type: 'video',
 				
@@ -117,6 +117,7 @@ class H264adapter {
 			//console.log('play delay : '+playDelay) ;
 		}
 		
+		/*
 		if( playDelay > 0 ) {
 			const isChrome = this.browserIsChrome ;
 			const isFF = this.browserIsFirefox ;
@@ -138,16 +139,16 @@ class H264adapter {
 					console.log('JITTER newH264_timebaseRun : '+newH264_timebaseRun) ;
 				}
 			}
-			/*
-			if( isFF ) {
-				// Firefox workaround to allow smooth playback, increasing latency
-				if( playDelay < 0.5 ) {
-					console.log('GROW DELAY ! :'+playDelay) ;
-					this.videoEl.currentTime = buffered.end(0) - 0.5 ;
-				}
-			}
-			*/
+			// if( isFF ) {
+			// 	// Firefox workaround to allow smooth playback, increasing latency
+			// 	if( playDelay < 0.5 ) {
+			// 		console.log('GROW DELAY ! :'+playDelay) ;
+			// 		this.videoEl.currentTime = buffered.end(0) - 0.5 ;
+			// 	}
+			// }
 		}
+		*/
+		
 		
 		this.isMP4appending = false ;
 		this.tryAppending() ;
@@ -191,6 +192,7 @@ class H264adapter {
 	}
 	
 	pushNalsData( uarray ) {
+		return ;
 		switch( this.videoFormat ) {
 			case 'avc' :
 				this.pushAvcData(uarray) ;
@@ -512,7 +514,7 @@ class H264adapter {
 		if( this.audioTrack ) {
 			codecs.push(this.audioTrack.codec) ;
 		}
-		const mimeType = 'video/mp4;codecs='+codecs.join(',') ;
+		const mimeType = 'audio/mp4;codecs='+codecs.join(',') ;
 		try {
 			this.sourceBuffer = this.mediaSource.addSourceBuffer(mimeType);
 			this.sourceBuffer.addEventListener('updateend', this.onsbue);
@@ -561,12 +563,14 @@ class H264adapter {
 		if( !this.isMP4initialized ) {
 			return ;
 		}
-		if( this.videoTrack.forwardNals.length == 0 ) {
+		//if( this.videoTrack.forwardNals.length == 0 ) {
 			//return ;
-		}
+		//}
 		
+		if( this.videoTrack ) {
 		console.log('forward video nal count '+this.videoTrack.forwardNals.length) ;
-		if( this.videoTrack.forwardNals.length > 0 ) {
+		}
+		if( this.videoTrack && this.videoTrack.forwardNals.length > 0 ) {
 		var forwardNals = this.videoTrack.forwardNals,
 			runningTs = forwardNals[0].runningTs,
 			isKey = false,
@@ -681,6 +685,8 @@ class H264adapter {
 		this.MP4segmentsQueue.push( mergedArray ) ;
 		}
 		
+		
+		
 		this.tryAppending() ;
 	}
 	
@@ -692,6 +698,18 @@ class H264adapter {
 		if( MP4segmentsQueue.length == 0 ) {
 			return ;
 		}
+		
+			if( this._listenerFn ) {
+				console.log('push') ;
+		while( MP4segmentsQueue.length > 0 ) {
+			this._listenerFn( {debug: MP4segmentsQueue.shift()} ) ;
+
+			
+		}
+		return ;
+			}
+		
+		return ;
 		
 		this.isMP4appending = true ;
 		

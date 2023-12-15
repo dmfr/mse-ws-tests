@@ -1,3 +1,8 @@
+// Debug :
+// ffmpeg -i 9285d906-98ef-45f2-a133-c4f25bca8e1c.aac -bsf:a aac_adtstoasc -acodec: copy -f mp4 -movflags empty_moov -frag_size 1 test-good.m4a
+// 
+
+
 export function getAudioConfig (data, offset) {
   let adtsObjectType, // :int
     adtsSampleingIndex, // :int

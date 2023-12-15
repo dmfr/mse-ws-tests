@@ -141,9 +141,13 @@
 					});
 					
 					adapter = new H264adapter( document.getElementById('tag_video'), videoInfo ) ;
-					adapter.setListenerFn( function({playDelay}) {
-						if( playDelay != null ) {
+					adapter.setListenerFn( function(obj) {
+						if( obj.playDelay != null ) {
 							updateCaptionJitter(playDelay) ;
+						}
+						if( obj.debug != null ) {
+							console.dir(obj.debug) ;
+							socketBlobs.push(new Blob([obj.debug])) ;
 						}
 					});
 				} else {
