@@ -306,7 +306,7 @@ class H264adapter {
 			}
 			
 			if( this.isHevcVideoframeNAL(objNalu) ) {
-				console.log( 'adding video ts='+this.videoTrack.nextRunningTS/this.MP4_timescale ) ;
+				//console.log( 'adding video ts='+this.videoTrack.nextRunningTS/this.MP4_timescale ) ;
 				this.videoTrack.forwardNals.push({
 					runningTs: this.videoTrack.nextRunningTS,
 					isKey: ((objNalu.type >= 16) && (objNalu.type < 24)),
@@ -387,7 +387,7 @@ class H264adapter {
 			const headerLength = adts.getHeaderLength(uarray,0);
 			const frameLength = adts.getFullFrameLength(uarray,0);
 			
-			console.log( 'adding audio ts='+this.audioTrack.nextRunningTS/this.MP4_timescale ) ;
+			//console.log( 'adding audio ts='+this.audioTrack.nextRunningTS/this.MP4_timescale ) ;
 			this.audioTrack.forwardFrames.push({
 				runningTs: this.audioTrack.nextRunningTS,
 				data: uarray.subarray(headerLength,frameLength),
@@ -667,7 +667,6 @@ class H264adapter {
 				isNonSync : 0,
 			}
 		} ;
-		console.dir(moofObj) ;
 		let moof = MP4.moof(this.audioTrack.nextMP4sequence++, runningTs  , {id:2, type:'audio', samples:[moofObj]});
 		
 		/*
