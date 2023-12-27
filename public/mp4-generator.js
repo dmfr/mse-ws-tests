@@ -289,6 +289,9 @@ class MP4 {
   }
 
   static sdtp(track) {
+    if( track.type && track.type==='audio' ) {
+        return new Uint8Array([]);
+    }
     var
       samples = track.samples || [],
       bytes = new Uint8Array(4 + samples.length),
