@@ -51,7 +51,7 @@
 		<script type="module">
 			import H264adapter from './h264-adapter.js' ;
 			
-			let socket = null, adapter = null ;
+			let socket = null, adapter = null, adapterAudio = null;
 			let socketBytes = 0 ;
 			let socketBlobs = [] ;
 			let socketTs = null ;
@@ -137,6 +137,9 @@
 							if( adapter ) {
 								adapter.pushData(new Uint8Array(event.data,0)) ;
 							}
+							if( adapterAudio ) {
+								adapterAudio.pushData(new Uint8Array(event.data,0)) ;
+							}
 						}
 					});
 					
@@ -150,6 +153,9 @@
 							socketBlobs.push(new Blob([obj.debug])) ;
 						}
 					});
+					if( videoInfo.audio ) {
+						adapterAudio = new H264adapter( document.getElementById('tag_audio'), videoInfo ) ;
+					}
 				} else {
 					closeAll() ;
 				}
@@ -238,6 +244,10 @@
 				if( adapter != null ) {
 					adapter.terminate() ;
 					adapter = null ;
+				}
+				if( adapterAudio != null ) {
+					adapterAudio.terminate() ;
+					adapterAudio = null ;
 				}
 			}
 			function downloadBlob() {
@@ -353,6 +363,9 @@
 			<div style='border: 1px solid gray ; padding: 10px ; margin:4px'>
 				<div class="video-container">
 					<video id='tag_video' class="video"  />
+				</div>
+				<div class="audio-container">
+					<audio id='tag_audio' class="audio"  />
 				</div>
 				<input class="seekbar" type="range" style='width:100% ; display:none'></input>
 			</div>
