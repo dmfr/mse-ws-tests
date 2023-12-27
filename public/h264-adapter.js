@@ -4,7 +4,7 @@ import * as adts from './adts-utils.js' ;
 
 class H264adapter {
 	
-	constructor(videoEl, videoInfo) {
+	constructor(videoEl, videoInfo, videoAndAudio=false) {
 		videoInfo = videoInfo || {} ;
 		
 		this.browserIsChrome = !!window.chrome ;
@@ -38,7 +38,7 @@ class H264adapter {
 		
 		this.MP4_timescale = 90000 ;
 		
-		if( true ) {
+		if( true && (videoEl.nodeName=='VIDEO') ) {
 			this.videoTrack = {
 				type: 'video',
 				
@@ -62,7 +62,7 @@ class H264adapter {
 				forwardNals: []
 			};
 		}
-		if( videoInfo.audio ) {
+		if( videoInfo.audio && ((videoEl.nodeName=='AUDIO')||videoAndAudio) ) {
 			this.audioTrack = {
 				type: 'audio',
 				
@@ -198,6 +198,9 @@ class H264adapter {
 	}
 	
 	pushNalsData( uarray ) {
+		if( !this.videoTrack ) {
+			return ;
+		}
 		switch( this.videoFormat ) {
 			case 'avc' :
 				this.pushAvcData(uarray) ;
@@ -370,6 +373,9 @@ class H264adapter {
 	}
 	
 	pushAdtsData( uarray ) {
+		if( !this.audioTrack ) {
+			return ;
+		}
 		const hasOneFrame = true ;
 		if( !this.isSourceCreated ) {
 			const audioConfig = adts.getAudioConfig( uarray,0 ) ;
@@ -519,7 +525,7 @@ class H264adapter {
 		if( this.audioTrack ) {
 			codecs.push(this.audioTrack.codec) ;
 		}
-		const mimeType = 'video/mp4;codecs='+codecs.join(',') ;
+		const mimeType = (!!this.videoTrack ? 'video':'audio')+'/mp4;codecs='+codecs.join(',') ;
 		try {
 			this.sourceBuffer = this.mediaSource.addSourceBuffer(mimeType);
 			this.sourceBuffer.addEventListener('updateend', this.onsbue);
