@@ -112,6 +112,7 @@ server.on('request',function request(request,response) {
 					initTs: ws.init_ts,
 				  
 					format: ws.videoFormat,
+					audio: ws.audioEnabled,
 				})
 			}) ;
 			list.sort( function compare( a, b ) {
@@ -161,6 +162,7 @@ server.on('upgrade', function upgrade(request, socket, head) {
 	switch( pathname ) {
 		case '/record' :
 			const videoFormat = (query && query.format) ? query.format : 'avc' ;
+			const audioEnabled = (query && query.audio && (query.audio >= 1)) ? true : false ;
 			switch( videoFormat ) {
 				case 'avc' :
 				case 'hevc' :
@@ -172,6 +174,7 @@ server.on('upgrade', function upgrade(request, socket, head) {
 				ws.isRecordSource = true ;
 				ws.remoteAddress = socket.remoteAddress ;
 				ws.videoFormat = videoFormat ;
+				ws.audioEnabled = audioEnabled
 				wss.emit('connection', ws, request);
 			});
 			break ;
@@ -350,7 +353,6 @@ function registerService(ws) {
 			}
 		});
 		data = new Uint8Array(data) ;
-		console.dir(data);
 		var dataType = null ;
 		switch( data[0] ) {
 			case 0x01 : // private byte prefix for video (unused)

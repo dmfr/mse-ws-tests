@@ -195,8 +195,9 @@
 						if( data.length > 0 ) {
 							htmlTable += '<table>' ;
 							data.forEach((row) => {
+								const hasAudio = ((row.file_audio!=null) ? 1 : 0) ;
 								//console.dir(row) ;
-								htmlTable += '<tr data-type="play" data-uuid="'+row.id+'" data-format="'+row.format+'">' ;
+								htmlTable += '<tr data-type="play" data-uuid="'+row.id+'" data-format="'+row.format+'" data-audio="'+hasAudio+'">' ;
 								htmlTable += '<td>'+"LIVE"+'</td>' ;
 								htmlTable += '<td>'+row.id+'</td>' ;
 								htmlTable += '<td class="tcenter">'+row.format+'</td>' ;
