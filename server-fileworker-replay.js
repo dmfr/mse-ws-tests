@@ -103,52 +103,6 @@ function doReplayStreams() {
 		});
 	});
 }
-/*
-fsPromises.open(filePath).then((fileHandler) => {
-	bufferChunks = [] ;
-	timer = setInterval(() => {
-		if( bufferChunks.length > 0 ) {
-			const data = bufferChunks.shift() ;
-			if( data == null ) {
-				clearInterval(timer) ;
-				fileHandler.close() ;
-			}
-			if( parentPort ) {
-				parentPort.postMessage({ data });
-			}
-			console.log('.') ;
-		}
-	}, 1000/videoFps);
-	loopBuffer( fileHandler ).then(({})=>{
-		// EOF reached
-	}) ;
-},()=>{
-	console.log("FileNotFound: "+filePath) ;
-});
-fsPromises.open(filePathAudio).then((fileHandlerAudio) => {
-	audioreader = new adtsReader(fileHandlerAudio) ;
-	
-	bufferChunksAudio = [] ;
-	timer = setInterval(() => {
-		if( bufferChunksAudio.length > 0 ) {
-			const data = bufferChunksAudio.shift() ;
-			if( data == null ) {
-				clearInterval(timer) ;
-				fileHandlerAudio.close() ;
-			}
-			if( parentPort ) {
-				parentPort.postMessage({ data });
-			}
-			console.log('*') ;
-		}
-	}, 1024/44100 * 1000);
-	loopBufferAudio( fileHandlerAudio ).then(({})=>{
-		// EOF reached
-	}) ;
-},()=>{
-	console.log("FileNotFound: "+filePath) ;
-});
-*/
 
 function util_timeout(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
