@@ -378,6 +378,7 @@ function registerService(ws) {
 			ws.writeStreamVideo.write(data) ;
 		}
 		if( (dataType=='audio') && ws.writeStreamAudio ) {
+			ws.audioEnabled = true ;
 			ws.writeStreamAudio.write(data) ;
 		}
 	});
