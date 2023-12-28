@@ -62,6 +62,8 @@
 			
 			let _wfs ;
 			
+			let _debug ;
+			
 			function onWindowResize(ev) {
 				console.log('onWindowResize') ;
 				//console.dir(arguments) ;
@@ -112,6 +114,8 @@
 						socketBlobs = [] ;
 						updateCaption() ;
 						
+						_debug = null ;
+						
 						streamByteOffset = 0 ;
 					});
 					// Connection closed
@@ -129,6 +133,48 @@
 					// Receiving
 					socket.addEventListener('message', (event) => {
 						// NOTE, ArrayBuffer (binary) / other (String)
+						/*
+						if( event.data instanceof ArrayBuffer ) {
+							if( !_debug ) {
+							_debug = {
+								cnt: 0,
+								cnt_audio: 0,
+								cnt_video: 0,
+								ts_first: Date.now(),
+								ts_last: Date.now(),
+							};
+							}
+							//console.log(_debug) ;
+							const uarray = new Uint8Array(event.data,0) ;
+							_debug.cnt++ ;
+							switch( uarray[0] ) {
+								case 0x01 : // private byte prefix for video
+								case 0x00 : // AVC/HEVC NALs starts with 0x00
+									_debug.cnt_video++ ;
+									break ;
+									
+								case 0x02 : // private byte prefix for audio
+								case 0xFF : // ADTS starts with 0xFF
+									_debug.cnt_audio++ ;
+									break ;
+									
+								default:
+									break ;
+							}
+							if( _debug.cnt % 100 == 0 ) {
+								var lastTs = Date.now(),
+									timeMs = lastTs - _debug.ts_first ;
+								const videoFps = _debug.cnt_video * 1000 / timeMs ;
+								const audioFps = _debug.cnt_audio * 1000 / timeMs ;
+								
+								console.log('---- STATS : '+timeMs+' ------');
+								console.log('Video FPS : '+videoFps) ;
+								console.log('Audio FPS : '+(audioFps*1024)) ;
+							}
+							
+							return ;
+						}
+						*/
 						if( event.data instanceof ArrayBuffer ) {
 							//const firstByte = new DataView(event.data).getUint8(0) ; //NOTE : example, switch on first byte (video vs audio?)
 							//console.dir(event.data) ;
