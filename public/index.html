@@ -122,6 +122,9 @@
 						socketTs = null ;
 						socketBlobs = [] ;
 						updateCaption() ;
+						if( adapterAudio ) {
+							adapterAudio.terminate() ;
+						}
 					});
 					// Receiving
 					socket.addEventListener('message', (event) => {
