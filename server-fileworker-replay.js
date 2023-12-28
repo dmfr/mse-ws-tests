@@ -71,14 +71,18 @@ function doReplayStreams() {
 				case 'video' :
 					stream.mediaReader = new h264reader(fileHandle,h264reader.getVideoFormatFromPath(stream.filepath)) ;
 					streamFps = stream.videoFps || 30 ;
+					stream.streamFps = streamFps ;
 					stream.intervalMs = 1000 * (1/streamFps) ;
 					stream.currentFrameIdx = 0 ;
+					stream.countSent = 0 ;
 					break ;
 				case 'audio' :
 					stream.mediaReader = new adtsReader(fileHandle) ;
 					streamFps = AAC_SAMPLERATE / AAC_SAMPLES_PER_FRAME ;
+					stream.streamFps = streamFps ;
 					stream.intervalMs = 1000 * (1/streamFps) ;
 					stream.currentFrameIdx = 0 ;
+					stream.countSent = 0 ;
 					break ;
 			}
 			if( !USE_OFFSETCACHE || !stream.offsets ) {
@@ -87,16 +91,32 @@ function doReplayStreams() {
 			if( USE_BUFFER ) {
 				runBufferThread(id) ;
 			}
+			stream.firstTs = Date.now() ;
 			stream.timer = setInterval(() => {
-				getNextFrame(id).then( ({data,isEof}) => {
+				let nbFramesToSend = 1 ;
+				
+				if( (stream.countSent>0) && (stream.countSent%10 == 0) ) {
+					const countFramesByTimer = Math.round( (Date.now() - stream.firstTs) * stream.streamFps / 1000 ) ;
+					const nbFramesToSendByTimer = countFramesByTimer - stream.countSent ;
+					switch( stream.type ) {
+						case 'video' :
+						case 'audio' :
+							if( nbFramesToSendByTimer > 1 ) {
+								nbFramesToSend = nbFramesToSendByTimer ;
+							}
+							break ;
+					}
+				}
+				if( nbFramesToSend != 1 ) {
+					console.log( stream.type+' : '+nbFramesToSend ) ;
+				}
+				stream.countSent += nbFramesToSend ;
+				consumeFrames(id,1).then( ({isEof}) => {
 					if( isEof ) {
-						//console.log('clear timer #'+id) ;
+						console.log('clear timer #'+id) ;
 						clearInterval(stream.timer) ;
 						fileHandle.close() ;
 						return ;
-					}
-					if( (data!=null) && parentPort ) {
-						parentPort.postMessage({ data });
 					}
 				}) ;
 			}, stream.intervalMs);
@@ -104,7 +124,22 @@ function doReplayStreams() {
 	});
 }
 
-function util_timeout(ms) {
+async function consumeFrames(streamId,nbFrames) {
+	let returnEof = false ;
+	for( let i=0 ; i<nbFrames ; i++ ) {
+		const {data,isEof} = await getNextFrame(streamId) ;
+		if( isEof ) {
+			returnEof = true ;
+			break ;
+		}
+		if( (data!=null) && parentPort ) {
+			parentPort.postMessage({ data });
+		}
+	}
+	return { isEof:returnEof } ;
+}
+
+async function util_timeout(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
