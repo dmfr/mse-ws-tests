@@ -375,9 +375,10 @@ function registerService(ws) {
 				break ;
 		}
 		if( (dataType=='video') && ws.writeStreamVideo ) {
+			ws.hasVideo = true ;
 			ws.writeStreamVideo.write(data) ;
 		}
-		if( (dataType=='audio') && ws.writeStreamAudio ) {
+		if( (dataType=='audio') && ws.writeStreamAudio && ws.hasVideo ) {
 			ws.audioEnabled = true ;
 			ws.writeStreamAudio.write(data) ;
 		}
