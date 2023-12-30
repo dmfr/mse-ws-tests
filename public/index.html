@@ -45,6 +45,69 @@
 			#div_table table tr:nth-child(odd) td {
 				background-color: #eeeeee ;
 			}
+			
+			/* ************* MODAL *************** */
+			/* The Modal (background) */
+			.modal {
+				display: none; /* Hidden by default */
+				position: fixed; /* Stay in place */
+				z-index: 1; /* Sit on top */
+				left: 0;
+				top: 0;
+				width: 100%; /* Full width */
+				height: 100%; /* Full height */
+				background-color: rgb(0,0,0); /* Fallback color */
+				background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
+			}
+			/* Modal Content */
+			.modal-content {
+				background-color: #fefefe;
+				margin: 50px;
+				border: 1px solid #888;
+				width: calc(100vw - 100px);
+				height: calc(100vh - 100px);
+				padding: 10px;
+				display: table;
+			}
+			.modal-row-header {
+				display: table-row;
+				width:100%;
+				height:28px;
+			}
+			/* The Close Button */
+			.close {
+				color: #aaaaaa;
+				float: right;
+				font-size: 28px;
+				font-weight: bold;
+			}
+			.close:hover,
+			.close:focus {
+				color: #000;
+				text-decoration: none;
+				cursor: pointer;
+			}
+			.modal-row-body {
+				display: table-row;
+				width:100%;
+				height:100%;
+			}
+			.modal-cell-body {
+				display: table-cell;
+				width:100%;
+				height:100%;
+			}
+			/* https://stackoverflow.com/questions/23248441/resizing-video-element-to-parent-div */
+			.videocontainer {
+				height: 100% ;
+				position: relative;
+			}
+			.videocontainer video {
+				position: absolute;
+				width:100%;
+				height:100%;
+			}
+			/* **************************** */
 		</style>
 		
 <!-- 		<script type="text/javascript" src="./wfs.js"></script> -->
@@ -83,10 +146,12 @@
 				//return openFileTest(null) ;
 			}
 			function openFile(fileId, videoInfo=null) {
+				openPlayer() ;
 				const wssUrl = '/replay?id='+fileId ;
 				openWss(wssUrl,videoInfo) ;
 			}
 			function openService(serviceId, videoInfo=null) {
+				openPlayer() ;
 				const wssUrl = '/play' + (serviceId ? '?id='+serviceId : '') ;
 				openWss(wssUrl,videoInfo) ;
 			}
@@ -286,7 +351,7 @@
 			}
 			*/
 			function closeAll() {
-				document.getElementById('div_table').style.display = 'none' ;
+				//document.getElementById('div_table').style.display = 'none' ;
 				if( socket != null ) {
 					socket.close() ;
 				}
@@ -345,7 +410,7 @@
 				const trElement = ev.target.closest('tr') ;
 				if( trElement.dataset ) {
 					const dataset = trElement.dataset ;
-					document.getElementById('div_table').style.display = 'none' ;
+					//document.getElementById('div_table').style.display = 'none' ;
 					var videoInfo = {
 						fps: dataset.fps ? parseInt(dataset.fps) : null,
 						format: dataset.format,
@@ -360,6 +425,15 @@
 							break ;
 					}
 				}
+			}
+			
+			function openPlayer() {
+				document.getElementById('playerModal').style.display='block';
+			
+			}
+			function closePlayer() {
+				closeAll() ;
+				document.getElementById('playerModal').style.display='none';
 			}
 			
 			
@@ -378,8 +452,26 @@
 			document.getElementById('btn99').addEventListener('click', ()=>{debugForceDelay1s()}) ;
 			
 			document.getElementById('div_table').addEventListener('click', onTableClick) ;
+			
+			document.getElementById('myClose').addEventListener('click', closePlayer) ;
 		</script>
 		<body>
+			<!-- The Modal -->
+			<div id="playerModal" class="modal">
+				<!-- Modal content -->
+				<div class="modal-content">
+					<div class="modal-row-header">
+						<span id="myClose" class="close">&times;</span>
+					</div>
+					<div class="modal-row-body">
+						<div class="modal-cell-body">
+							<div class="videocontainer"><video id='tag_video' /></div>
+							<div class="audiocontainer"><audio id='tag_audio' /></div>
+						</div>
+					</div>
+				</div>
+			</div>
+		
 			<div>
 				<input type="button" value="Button" id='btn1' />
 				&nbsp;
@@ -409,6 +501,7 @@
 				</p>
 			</div>
 			<hr>
+			<!--
 			<div style='border: 1px solid gray ; padding: 10px ; margin:4px'>
 				<div class="video-container">
 					<video id='tag_video' class="video"  />
@@ -421,5 +514,6 @@
 			<div style='text-align:center'>
 				<input type="button" value="Button Fullscreen" onclick="testWs(event)" />
 			</div>
+			-->
 		</body>
 </html>
