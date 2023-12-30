@@ -64,7 +64,7 @@ function doReplayStreams() {
 	//console.log('doReplayStreams') ;
 	//console.dir(streams) ;
 	streams.forEach( (stream,id) => {
-		fsPromises.open(stream.filepath).then((fileHandle) => {
+		fsPromises.open(stream.filepath).then(async (fileHandle) => {
 			stream.fileHandle = fileHandle ;
 			let streamFps ;
 			switch( stream.type ) {
@@ -95,7 +95,7 @@ function doReplayStreams() {
 			stream.timer = setInterval(() => {
 				let nbFramesToSend = 1 ;
 				
-				if( (stream.countSent>0) && (stream.countSent%10 == 0) ) {
+				if( (stream.countSent>0) && (stream.countSent % Math.floor(stream.streamFps) == 0) ) {
 					const countFramesByTimer = Math.round( (Date.now() - stream.firstTs) * stream.streamFps / 1000 ) ;
 					const nbFramesToSendByTimer = countFramesByTimer - stream.countSent ;
 					switch( stream.type ) {
@@ -111,7 +111,7 @@ function doReplayStreams() {
 					console.log( stream.type+' : '+nbFramesToSend ) ;
 				}
 				stream.countSent += nbFramesToSend ;
-				consumeFrames(id,1).then( ({isEof}) => {
+				consumeFrames(id,nbFramesToSend).then( ({isEof}) => {
 					if( isEof ) {
 						console.log('clear timer #'+id) ;
 						clearInterval(stream.timer) ;
