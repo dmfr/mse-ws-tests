@@ -124,13 +124,16 @@ function doReplayStreams() {
 	});
 }
 
-async function consumeFrames(streamId,nbFrames) {
+async function consumeFrames(streamId,nbFrames,silent=false) {
 	let returnEof = false ;
 	for( let i=0 ; i<nbFrames ; i++ ) {
 		const {data,isEof} = await getNextFrame(streamId) ;
 		if( isEof ) {
 			returnEof = true ;
 			break ;
+		}
+		if( silent ) {
+			continue ;
 		}
 		if( (data!=null) && parentPort ) {
 			parentPort.postMessage({ data });
