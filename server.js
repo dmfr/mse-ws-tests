@@ -395,7 +395,7 @@ function registerService(ws) {
 		console.log('unregister service '+id) ;
 		services.delete(ws) ;
 		if( ws.writePathVideo ) {
-			const tmpIndexWorker = new Worker("./server-fileworker-buildindex.js", {workerData:{filePath:ws.writePathVideo}});
+			const tmpIndexWorker = new Worker("./server-fileworker-buildindex.js", {workerData:{programId:id}});
 		}
 	});
 	ws.on('error', function error() {

@@ -104,9 +104,9 @@ async function buildFilesList( filestore_path ) {
 	return filesList ;
 }
 
-function doBuildIndex(filePath) {
+function doBuildIndex(programId) {
 	return new Promise(function (resolve, reject) {
-		const worker = new Worker("./server-fileworker-buildindex.js", {workerData:{filePath:filePath}});
+		const worker = new Worker("./server-fileworker-buildindex.js", {workerData:{programId:programId}});
 		worker.on("exit", (code) => {
 			resolve() ;
 		});
@@ -127,10 +127,8 @@ if( !workerData ) {
 	Promise.all(filesList.map( (filesListRow) => {
 		if( !filesListRow.hasOwnProperty('file_map') ) {
 			limit(async () => {
-				console.log('building for '+filesListRow.file_stream );
-				const pathSave = _config.filestore_path,
-					filePath = pathSave + '/' + filesListRow.file_stream ;
-				await doBuildIndex(filePath) ;
+				console.log('building program ID = '+filesListRow.id );
+				await doBuildIndex(filesListRow.id) ;
 			});
 		}
 	}));
