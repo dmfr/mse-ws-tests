@@ -50,13 +50,18 @@ async function buildFilesList( filestore_path ) {
 			const binaryDat = await fsPromises.readFile(filestore_path + '/' + file),
 				jsonDat = JSON.parse(binaryDat);
 			filesList[fileUUID]['remoteAddress'] = jsonDat.remoteAddress ;
+			if( jsonDat.fps ) {
+				filesList[fileUUID]['fps'] = jsonDat.fps ;
+			}
 		}
 		if( path.extname(file) == '.map' ) {
 			filesList[fileUUID]['file_map'] = file ;
 			const binaryMap = await fsPromises.readFile(filestore_path + '/' + file),
 				jsonMap = JSON.parse(binaryMap) ;
 			filesList[fileUUID]['videosize'] = jsonMap.size ;
-			filesList[fileUUID]['fps'] = jsonMap.fps || 30 ;
+			if( jsonMap.fps ) {
+				filesList[fileUUID]['fps'] = jsonMap.fps ;
+			}
 			if( requestedFileId ) {
 				filesList[fileUUID]['offsets'] = jsonMap.offsets || null ;
 			}
@@ -69,6 +74,9 @@ async function buildFilesList( filestore_path ) {
 			}
 			filesList[fileUUID]['size']+= infos.size ;
 			filesList[fileUUID]['format'] = h264reader.getVideoFormatFromPath(file) ;
+			if( !filesList[fileUUID]['fps'] ) {
+				filesList[fileUUID]['fps'] = 30 ;
+			}
 		}
 		if( ['.aac'].includes(path.extname(file)) ) {
 			filesList[fileUUID]['file_audio'] = file ;
@@ -76,6 +84,11 @@ async function buildFilesList( filestore_path ) {
 			filesList[fileUUID]['size']+= infos.size ;
 		}
 	}));
+	for (const [fileUUID,filesListRow] of Object.entries(filesList)) {
+		if( !filesListRow.file_stream ) {
+			delete filesList[fileUUID] ;
+		}
+	}
 	
 	filesList = Object.values(filesList) ;
 	filesList.sort( function compare( a, b ) {
