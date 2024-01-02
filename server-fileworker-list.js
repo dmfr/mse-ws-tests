@@ -4,6 +4,8 @@ import * as fsPromises from 'fs/promises';
 import * as path from 'path';
 import { Worker } from "worker_threads" ;
 
+import pLimit from 'p-limit' ;
+
 import h264reader from './server-lib-h264reader.js' ;
 
 import { createRequire } from "module";
@@ -89,6 +91,16 @@ async function buildFilesList( filestore_path ) {
 	return filesList ;
 }
 
+function doBuildIndex(filePath) {
+	return new Promise(function (resolve, reject) {
+		const worker = new Worker("./server-fileworker-buildindex.js", {workerData:{filePath:filePath}});
+		worker.on("exit", (code) => {
+			resolve() ;
+		});
+	});
+}
+
+
 const filesList = await buildFilesList( _config.filestore_path ) ;
 if( typeof parentPort !== 'undefined' ) {
 	if( parentPort ) {
@@ -97,13 +109,16 @@ if( typeof parentPort !== 'undefined' ) {
 	}
 }
 if( !workerData ) {
-	Promise.all(filesList.map(async (filesListRow) => {
-		await timeout(100) ;
+	//const limit = pLimit(Number.POSITIVE_INFINITY);
+	const limit = pLimit(4);
+	Promise.all(filesList.map( (filesListRow) => {
 		if( !filesListRow.hasOwnProperty('file_map') ) {
-			//console.log('building for '+filesListRow.file_stream );
-			const pathSave = _config.filestore_path,
-				filePath = pathSave + '/' + filesListRow.file_stream ;
-			new Worker("./server-fileworker-buildindex.js", {workerData:{filePath:filePath}});
+			limit(async () => {
+				console.log('building for '+filesListRow.file_stream );
+				const pathSave = _config.filestore_path,
+					filePath = pathSave + '/' + filesListRow.file_stream ;
+				await doBuildIndex(filePath) ;
+			});
 		}
 	}));
 }
