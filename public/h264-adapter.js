@@ -28,10 +28,10 @@ class H264adapter {
 		this.videoFormat = videoInfo.format || 'avc' ;
 		this.videoFps = videoInfo.fps || 30 ;
 		
-		this.H264_fps = this.videoFps ; // var ?
-		this.H264_timescale = 90000 ;
-		this.H264_timebase = Math.floor(this.H264_timescale / (this.H264_fps + (this.browserEnableFasterFps ? 1 : 0))) ;
-		this.H264_timebaseRun = this.H264_timebase ;
+		// this.H264_fps = this.videoFps ; // var ?
+		// this.H264_timescale = 90000 ;
+		// this.H264_timebase = Math.floor(this.H264_timescale / (this.H264_fps + (this.browserEnableFasterFps ? 1 : 0))) ;
+		// this.H264_timebaseRun = this.H264_timebase ;
 		
 		//this.H264_timescale = this.videoFps + 1 ;
 		//this.H264_timebaseRun = 1 ;
@@ -51,7 +51,7 @@ class H264adapter {
 				pps: null,
 				
 				timescale: this.MP4_timescale,
-				frameDuration: this.MP4_timescale * (1 / (this.H264_fps+0)),
+				frameDuration: this.MP4_timescale * (1 / (this.videoFps + (this.browserEnableFasterFps ? 1 : 0))),
 				frameCount: 0,
 				duration: 0,
 				id: 1,
@@ -85,8 +85,8 @@ class H264adapter {
 				forwardFrames: []
 			};
 		}
-		this.runningTs = 0 ;
-		this.countVCL = 0 ;
+		// this.runningTs = 0 ;
+		// this.countVCL = 0 ;
 		
 		this.isMediaReady = false ;
 		this.isSourceCreated = false ;
@@ -116,12 +116,10 @@ class H264adapter {
 		if( buffered && buffered.length > 0 ) {
 			playDelay = this.sourceBuffer.buffered.end(0) - this.videoEl.currentTime ;
 		}
-		if( this.countVCL % this.H264_fps == 0 ) {
-			if( this._listenerFn ) {
-				this._listenerFn( {playDelay: playDelay} ) ;
-			}
-			//console.log('play delay : '+playDelay) ;
+		if( this._listenerFn ) {
+			this._listenerFn( {playDelay: playDelay} ) ;
 		}
+		//console.log('play delay : '+playDelay) ;
 		
 		/*
 		if( playDelay > 0 ) {
@@ -275,7 +273,7 @@ class H264adapter {
 			this.buildMP4segments() ; // MOOF + MDAT
 		}
 		if( hasVCL ) {
-			this.runningTs += this.H264_timebaseRun ;
+			// this.runningTs += this.H264_timebaseRun ;
 			
 			/*
 			// calc accurate fps
@@ -365,7 +363,7 @@ class H264adapter {
 			this.buildMP4segments() ; // MOOF + MDAT
 		}
 		if( hasVCL ) {
-			this.runningTs += this.H264_timebaseRun ;
+			// this.runningTs += this.H264_timebaseRun ;
 			this.countVCL++ ;
 			this.videoTrack.frameCount++ ;
 			this.videoTrack.nextRunningTS += this.videoTrack.frameDuration ;
