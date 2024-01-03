@@ -258,17 +258,22 @@
 					});
 					
 					adapter = new H264adapter( document.getElementById('tag_video'), videoInfo ) ;
-					adapter.setListenerFn( function(obj) {
-						if( obj.playDelay != null ) {
-							updateCaptionJitter(obj.playDelay) ;
-						}
-						if( obj.debug != null ) {
-							console.dir(obj.debug) ;
-							socketBlobs.push(new Blob([obj.debug])) ;
-						}
-					});
+					// adapter.setListenerFn( function(obj) {
+					// 	if( obj.playDelay != null ) {
+					// 		updateCaptionJitter(obj.playDelay) ;
+					// 	}
+					// 	if( obj.debug != null ) {
+					// 		console.dir(obj.debug) ;
+					// 		socketBlobs.push(new Blob([obj.debug])) ;
+					// 	}
+					// });
 					if( videoInfo.audio ) {
 						adapterAudio = new H264adapter( document.getElementById('tag_audio'), videoInfo ) ;
+						adapterAudio.setListenerFn( function(obj) {
+							if( obj.playDelay != null ) {
+								updateCaptionJitter(obj.playDelay) ;
+							}
+						});
 					}
 				} else {
 					closeAll() ;
@@ -337,6 +342,13 @@
 				if( adapter ) {
 					// force 1sec delay for test
 					adapter.videoEl.currentTime = adapter.sourceBuffer.buffered.end(0) - 1 ;
+				}
+			}
+			function debugForceAudioSeek(seekSecs) {
+				if( adapterAudio ) {
+					// force 1sec delay for test
+					console.dir(adapterAudio.videoEl.currentTime) ;
+					adapterAudio.videoEl.currentTime = adapterAudio.videoEl.currentTime + seekSecs ;
 				}
 			}
 			/*
@@ -449,7 +461,8 @@
 			document.getElementById('btn3').addEventListener('click', ()=>{openFile('e3bacf0c-a0c5-4a26-bed5-dd14a184d2c6')}) ;
 			document.getElementById('btn50').addEventListener('click', ()=>{openList()}) ;
 			document.getElementById('btn51').addEventListener('click', ()=>{closeAll()}) ;
-			document.getElementById('btn99').addEventListener('click', ()=>{debugForceDelay1s()}) ;
+			document.getElementById('btn98').addEventListener('click', ()=>{debugForceAudioSeek(-0.1)}) ;
+			document.getElementById('btn99').addEventListener('click', ()=>{debugForceAudioSeek(+0.15)}) ;
 			
 			document.getElementById('div_table').addEventListener('click', onTableClick) ;
 			
@@ -461,6 +474,8 @@
 				<!-- Modal content -->
 				<div class="modal-content">
 					<div class="modal-row-header">
+						<span style="float:left ; margin-right:24px"><input type="button" value="Debug -" id='btn98' /></span>
+						<span style="float:left ; margin-right:24px"><input type="button" value="Debug +" id='btn99' /></span>
 						<span style="float:left ; margin-right:50px" id='caption'>&nbsp;</span>
 						<span style="float:left ; margin-right:50px" id='caption2'>&nbsp;</span>
 						<span style="float:left ; margin-right:50px" id='caption3'>&nbsp;</span>
@@ -487,7 +502,7 @@
 				&nbsp;
 				<input type="button" value="Stop" id='btn51' />
 				&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-				<input type="button" value="Debug" id='btn99' />
+				
 			</div>
 			<div id="div_table" style="display:none">
 				<div id="div_table_play">
