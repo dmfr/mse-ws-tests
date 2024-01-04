@@ -132,6 +132,9 @@
 			let socketBlobs = [] ;
 			let socketTs = null ;
 			
+			// NOTE : tmp? for replay seek
+			let socket_replayBaseUrl = null ;
+			
 			// NOTE : Seeking todo
 			let streamByteOffset = 0 ;
 			let streamIsSeeking = false ;
@@ -159,12 +162,26 @@
 				//return openFileTest(null) ;
 			}
 			function openFile(fileId, videoInfo=null) {
-				openPlayer() ;
+				openPlayer(videoInfo) ;
 				const wssUrl = '/replay?id='+fileId ;
+				socket_replayBaseUrl = wssUrl ;
 				openWss(wssUrl,videoInfo) ;
 			}
+			function seekFile(offsetFloat) {
+				if( socket && socket_replayBaseUrl ) {
+					const seekUrl = socket_replayBaseUrl + '&offset='+ Math.round( offsetFloat*1000 ) ;
+					socket.addEventListener('close',() => {
+						setTimeout(() => {
+							openWss(seekUrl) ;
+						}, 50);
+					});
+					socket.close() ;
+					socket = null ;
+					invalidateAdapters() ;
+				}
+			}
 			function openService(serviceId, videoInfo=null) {
-				openPlayer() ;
+				openPlayer(videoInfo) ;
 				const wssUrl = '/play' + (serviceId ? '?id='+serviceId : '') ;
 				openWss(wssUrl,videoInfo) ;
 			}
@@ -179,7 +196,7 @@
 				new_uri += loc.pathname + "/"+wsAdr ;
 				return new_uri.replace(/([^:]\/)\/+/g, "$1"); ;
 			}
-			function openWss(wsAdr,videoInfo=null) {
+			function openWss(wsAdr) {
 				const wssAdr = buildWssUrl(wsAdr) ;
 				if( socket == null ) {
 					socket = new WebSocket(wssAdr);
@@ -205,7 +222,7 @@
 						socketBlobs = [] ;
 						updateCaption() ;
 						if( adapterAudio ) {
-							adapterAudio.terminate() ;
+							adapterAudio.invalidate() ;
 						}
 					});
 					// Receiving
@@ -253,6 +270,10 @@
 							return ;
 						}
 						*/
+						if( typeof event.data === "string" ) {
+							var obj = JSON.parse(event.data) ;
+							console.dir(obj) ;
+						}
 						if( event.data instanceof ArrayBuffer ) {
 							//const firstByte = new DataView(event.data).getUint8(0) ; //NOTE : example, switch on first byte (video vs audio?)
 							//console.dir(event.data) ;
@@ -269,27 +290,6 @@
 							}
 						}
 					});
-					
-					adapter = new H264adapter( document.getElementById('tag_video'), videoInfo ) ;
-					// adapter.setListenerFn( function(obj) {
-					// 	if( obj.playDelay != null ) {
-					// 		updateCaptionJitter(obj.playDelay) ;
-					// 	}
-					// 	if( obj.debug != null ) {
-					// 		console.dir(obj.debug) ;
-					// 		socketBlobs.push(new Blob([obj.debug])) ;
-					// 	}
-					// });
-					if( videoInfo.audio ) {
-						adapterAudio = new H264adapter( document.getElementById('tag_audio'), videoInfo ) ;
-						adapterAudio.setListenerFn( function(obj) {
-							if( obj.playDelay != null ) {
-								updateCaptionJitter(obj.playDelay) ;
-							}
-						});
-					}
-				} else {
-					closeAll() ;
 				}
 			}
 			
@@ -375,7 +375,7 @@
 				}
 			}
 			*/
-			function invalidateAll() {
+			function invalidateAdapters() {
 				if( adapter != null ) {
 					adapter.invalidate() ;
 				}
@@ -387,6 +387,9 @@
 				//document.getElementById('div_table').style.display = 'none' ;
 				if( socket != null ) {
 					socket.close() ;
+					if( socket_replayBaseUrl ) {
+						socket_replayBaseUrl = null ;
+					}
 				}
 				if( adapter != null ) {
 					adapter.terminate() ;
@@ -460,11 +463,31 @@
 				}
 			}
 			
-			function openPlayer() {
+			function openPlayer(videoInfo) {
 				document.body.style.overflow = 'hidden' ;
 				document.getElementById('playerModal').style.display='block';
 				document.getElementById('playerSeekbar').style.display='none';
 			
+				closeAll() ;
+				
+				adapter = new H264adapter( document.getElementById('tag_video'), videoInfo ) ;
+				// adapter.setListenerFn( function(obj) {
+				// 	if( obj.playDelay != null ) {
+				// 		updateCaptionJitter(obj.playDelay) ;
+				// 	}
+				// 	if( obj.debug != null ) {
+				// 		console.dir(obj.debug) ;
+				// 		socketBlobs.push(new Blob([obj.debug])) ;
+				// 	}
+				// });
+				if( videoInfo.audio ) {
+					adapterAudio = new H264adapter( document.getElementById('tag_audio'), videoInfo ) ;
+					adapterAudio.setListenerFn( function(obj) {
+						if( obj.playDelay != null ) {
+							updateCaptionJitter(obj.playDelay) ;
+						}
+					});
+				}
 			}
 			function closePlayer() {
 				closeAll() ;
@@ -485,8 +508,10 @@
 			document.getElementById('btn3').addEventListener('click', ()=>{openFile('e3bacf0c-a0c5-4a26-bed5-dd14a184d2c6')}) ;
 			document.getElementById('btn50').addEventListener('click', ()=>{openList()}) ;
 			document.getElementById('btn51').addEventListener('click', ()=>{closeAll()}) ;
-			document.getElementById('btn98').addEventListener('click', ()=>{debugForceAudioSeek(-0.1)}) ;
-			document.getElementById('btn99').addEventListener('click', ()=>{debugForceAudioSeek(+0.15)}) ;
+			// document.getElementById('btn98').addEventListener('click', ()=>{debugForceAudioSeek(-0.1)}) ;
+			// document.getElementById('btn99').addEventListener('click', ()=>{debugForceAudioSeek(+0.15)}) ;
+			document.getElementById('btn98').addEventListener('click', ()=>{seekFile(0.29)}) ;
+			document.getElementById('btn99').addEventListener('click', ()=>{seekFile(0.27)}) ;
 			
 			document.getElementById('div_table').addEventListener('click', onTableClick) ;
 			
