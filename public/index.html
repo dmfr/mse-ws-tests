@@ -118,6 +118,7 @@
 			.seekbar {
 				width: 100%;
 				height: 2px;
+				margin-top: 10px;
 				cursor: ew-resize;
 			}
 			/* **************************** */
@@ -136,8 +137,8 @@
 			let socket_replayBaseUrl = null ;
 			
 			// NOTE : Seeking todo
-			let streamByteOffset = 0 ;
-			let streamIsSeeking = false ;
+			let seekByteOffset = null, seekByteLength = null ;
+			let seekIsFocus = false ;
 			
 			let _wfs ;
 			
@@ -211,7 +212,8 @@
 						
 						_debug = null ;
 						
-						streamByteOffset = 0 ;
+						seekByteOffset = null ;
+						seekByteLength = null ;
 					});
 					// Connection closed
 					socket.addEventListener('close', (event) => {
@@ -273,12 +275,20 @@
 						if( typeof event.data === "string" ) {
 							var obj = JSON.parse(event.data) ;
 							console.dir(obj) ;
+							// NOTE: enable seek
+							if( obj.lengthBytes ) {
+								seekByteLength = obj.lengthBytes ;
+								seekByteOffset = obj.offsetBytes ;
+							}
 						}
 						if( event.data instanceof ArrayBuffer ) {
 							//const firstByte = new DataView(event.data).getUint8(0) ; //NOTE : example, switch on first byte (video vs audio?)
 							//console.dir(event.data) ;
 							socketBytes += event.data.byteLength ;
-							streamByteOffset += event.data.byteLength ;
+							if( seekByteLength != null ) {
+								seekByteOffset += event.data.byteLength ;
+								updateSeekbar() ;
+							}
 							//socketBlobs.push(new Blob(event.data)) ;
 							updateCaption() ;
 							
@@ -442,6 +452,25 @@
 				document.getElementById('caption3').innerHTML = 'Buffer ms : '+Math.round(jitter*1000) ;
 			}
 			
+			function onSeekbarInput() {
+				seekIsFocus = true ;
+			}
+			function onSeekbarChange() {
+				seekFile(0) ;
+				seekIsFocus = false ;
+			}
+			function updateSeekbar() {
+				if( seekIsFocus ) {
+					return ;
+				}
+				const seekbar = document.getElementById('playerSeekbar') ;
+				//console.dir(seekbar) ;
+				if( seekbar.style.display == 'none' ) {
+					seekbar.style.display='block';
+				}
+				seekbar.value = seekByteOffset * seekbar.max / seekByteLength ;
+			}
+			
 			function onTableClick(ev) {
 				const trElement = ev.target.closest('tr') ;
 				if( trElement.dataset ) {
@@ -513,6 +542,9 @@
 			document.getElementById('btn98').addEventListener('click', ()=>{seekFile(0.29)}) ;
 			document.getElementById('btn99').addEventListener('click', ()=>{seekFile(0.27)}) ;
 			
+			document.getElementById('playerSeekbar').addEventListener('input', ()=>{onSeekbarInput()}) ;
+			document.getElementById('playerSeekbar').addEventListener('change', ()=>{onSeekbarChange()}) ;
+			
 			document.getElementById('div_table').addEventListener('click', onTableClick) ;
 			
 			document.getElementById('myClose').addEventListener('click', closePlayer) ;
@@ -539,7 +571,7 @@
 					</div>
 					<div class="modal-row-footer">
 						<div class="modal-cell-footer">
-							<input id="playerSeekbar" class="seekbar" type="range" min="0" max="100" step="1"></input>
+							<input id="playerSeekbar" class="seekbar" type="range" min="0" max="1000" step="1"></input>
 						</div>
 					</div>
 				</div>
