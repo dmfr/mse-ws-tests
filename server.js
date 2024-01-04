@@ -233,7 +233,7 @@ server.on('upgrade', function upgrade(request, socket, head) {
 							id: 1,
 							type: 'audio',
 							filepath: pathSave+'/'+streamDesc.file_audio,
-							offsets: null,
+							offsets: streamDesc.audio_offsets,
 							audioFps: null,
 						})
 					}
