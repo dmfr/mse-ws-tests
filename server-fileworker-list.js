@@ -64,6 +64,7 @@ async function buildFilesList( filestore_path ) {
 			}
 			if( requestedFileId ) {
 				filesList[fileUUID]['offsets'] = jsonMap.offsets || null ;
+				filesList[fileUUID]['audio_offsets'] = jsonMap.audio_offsets || null ;
 			}
 		}
 		if( ['.h264','.avc','.hevc'].includes(path.extname(file)) ) {

@@ -47,7 +47,7 @@ if( (workerData != null) && (workerData.streams) ) {
 					id: 1,
 					type: 'audio',
 					filepath: debugPathSave + '/' + streamDesc.file_audio,
-					offsets: null,
+					offsets: streamDesc.audio_offsets,
 					audioFps: null,
 				})
 			}
