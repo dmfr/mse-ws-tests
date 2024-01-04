@@ -20,6 +20,8 @@ class H264adapter {
 		this.onsbue = this.onSBUpdateEnd.bind(this);
 		this.onsbe = this.onSBError.bind(this);
 		
+		this.onpause = this.onElPause.bind(this) ;
+		
 		
 		//console.log(this.mediaSource.readyState); // closed
 		this.videoEl.src = URL.createObjectURL(this.mediaSource);
@@ -46,9 +48,10 @@ class H264adapter {
 				
 				codec: null,
 				width: null,
-				height: null, 
+				height: null,
 				sps: null,
 				pps: null,
+				vps: null,
 				
 				timescale: this.MP4_timescale,
 				frameDuration: this.MP4_timescale * (1 / (this.videoFps + (this.browserEnableFasterFps ? 1 : 0))),
@@ -161,7 +164,45 @@ class H264adapter {
 		console.log('onSBError') ;
 	}
 	
+	onElPause() {
+		if( !this.isMP4initialized ) {
+			return ;
+		}
+		// Chrome (+FF ?) pauses video when page in background
+		// => force play to avoid buffer filling (+ latency) // NOTE : solved anyway by jitter reset
+		// => force play anyway for perf benchmarking
+		this.videoEl.play();
+	}
 	
+	invalidate() {
+		this.sourceBuffer.abort() ;
+		
+		if( this.videoTrack ) {
+			Object.assign(this.videoTrack,{
+				ready: false,
+				
+				codec: null,
+				width: null,
+				height: null,
+				sps: null,
+				pps: null,
+				vps: null,
+			});
+		}
+		if( this.audioTrack ) {
+			Object.assign(this.audioTrack,{
+				ready: false,
+				
+				codec: null,
+				channelCount: null,
+				audiosamplerate: null,
+				config:[],
+			});
+		}
+		this.isMP4initialized = false ;
+		
+		this.videoEl.pause() ;
+	}
 	terminate() {
 		if( this.sourceBuffer ) {
 			this.mediaSource.removeSourceBuffer( this.sourceBuffer ) ;
@@ -218,6 +259,7 @@ class H264adapter {
 		let hasVCL = false ;
 		for( let i=0 ; i<units.length ; i++ ) {
 			const objNalu = units[i] ;
+			//console.log('AVC NAL type='+objNalu.type) ;
 			if( !this.isAvcForwardNAL(objNalu) ) {
 				continue ;
 			}
@@ -233,7 +275,7 @@ class H264adapter {
 			}
 			
 			// get datas for init
-			if( !this.isSourceCreated ) {
+			if( !this.isMP4initialized ) {
 				switch( objNalu.type ) {
 					case 7 : // SPS
 						var codecarray = objNalu.data.subarray(1, 4);
@@ -258,7 +300,7 @@ class H264adapter {
 						break ;
 				}
 			}
-			if( !this.isSourceCreated && this.videoTrack.pps && this.videoTrack.sps ) {
+			if( !this.isMP4initialized && this.videoTrack.pps && this.videoTrack.sps ) {
 				this.videoTrack.ready = true ;
 				// PPS+SPS now in track
 				// => create source + initialize MP4
@@ -269,7 +311,7 @@ class H264adapter {
 				continue ;
 			}
 		}
-		if( this.isSourceCreated ) {
+		if( this.isMP4initialized ) {
 			this.buildMP4segments() ; // MOOF + MDAT
 		}
 		if( hasVCL ) {
@@ -302,6 +344,7 @@ class H264adapter {
 		let hasVCL = false ;
 		for( let i=0 ; i<units.length ; i++ ) {
 			const objNalu = units[i] ;
+			//console.log('HEVC NAL type='+objNalu.type) ;
 			if( !this.isHevcForwardNAL(objNalu) ) {
 				continue ;
 			}
@@ -318,7 +361,7 @@ class H264adapter {
 			}
 			
 			// get datas for init
-			if( !this.isSourceCreated ) {
+			if( !this.isMP4initialized ) {
 				switch( objNalu.type ) {
 					case 32 : // VPS
 						this.videoTrack.vps = [objNalu.data] ;
@@ -348,7 +391,7 @@ class H264adapter {
 						break ;
 				}
 			}
-			if( !this.isSourceCreated && this.videoTrack.pps && this.videoTrack.sps && this.videoTrack.vps ) {
+			if( !this.isMP4initialized && this.videoTrack.pps && this.videoTrack.sps && this.videoTrack.vps ) {
 				this.videoTrack.ready = true ;
 				// PPS+SPS+VPS now in track
 				// => create source + initialize MP4
@@ -359,7 +402,7 @@ class H264adapter {
 				continue ;
 			}
 		}
-		if( this.isSourceCreated ) {
+		if( this.isMP4initialized ) {
 			this.buildMP4segments() ; // MOOF + MDAT
 		}
 		if( hasVCL ) {
@@ -375,7 +418,7 @@ class H264adapter {
 			return ;
 		}
 		const hasOneFrame = true ;
-		if( !this.isSourceCreated ) {
+		if( !this.isMP4initialized ) {
 			const audioConfig = adts.getAudioConfig( uarray,0 ) ;
 			
 			this.audioTrack.audiosamplerate = audioConfig.samplerate ;
@@ -387,7 +430,7 @@ class H264adapter {
 			this.maybeCreateSourceBuffer() ;
 			this.buildMP4segments() ;
 		}
-		if( this.isSourceCreated ) {
+		if( this.isMP4initialized ) {
 			const headerLength = adts.getHeaderLength(uarray,0);
 			const frameLength = adts.getFullFrameLength(uarray,0);
 			
@@ -464,10 +507,10 @@ class H264adapter {
 	}
 	
 	isHevcForwardNAL( objNalu ) {
-		if( this.isHevcVideoframeNAL(objNalu) && !this.isSourceCreated ) {
+		if( this.isHevcVideoframeNAL(objNalu) && !this.isMP4initialized ) {
 			return false ;
 		}
-		if( !this.isHevcVideoframeNAL(objNalu) && this.isSourceCreated ) {
+		if( !this.isHevcVideoframeNAL(objNalu) && this.isMP4initialized ) {
 			return false ;
 		}
 		return true ;
@@ -484,13 +527,13 @@ class H264adapter {
 		switch( objNalu.type ) {
 			case 1 :
 			case 5 :
-				if( !this.isSourceCreated ) {
+				if( !this.isMP4initialized ) {
 					return false ;
 				}
 				return true ;
 			case 7 :
 			case 8 :
-				if( this.isSourceCreated ) {
+				if( this.isMP4initialized ) {
 					return false ;
 				}
 				return true ;
@@ -523,7 +566,14 @@ class H264adapter {
 		if( this.audioTrack ) {
 			codecs.push(this.audioTrack.codec) ;
 		}
+		
 		const mimeType = (!!this.videoTrack ? 'video':'audio')+'/mp4;codecs='+codecs.join(',') ;
+		if( this.isSourceCreated ) {
+			//console.log(mimeType) ;
+			this.sourceBuffer.changeType(mimeType) ;
+			this.videoEl.play() ;
+			return ;
+		}
 		try {
 			this.sourceBuffer = this.mediaSource.addSourceBuffer(mimeType);
 			this.sourceBuffer.addEventListener('updateend', this.onsbue);
@@ -534,12 +584,7 @@ class H264adapter {
 		this.isSourceCreated = true ;
 		this.videoEl.play() ;
 		
-		this.videoEl.addEventListener('pause', function () {
-			// Chrome (+FF ?) pauses video when page in background
-			// => force play to avoid buffer filling (+ latency) // NOTE : solved anyway by jitter reset
-			// => force play anyway for perf benchmarking
-			this.play();
-		}, true);
+		this.videoEl.addEventListener('pause', this.onpause, true);
 	}
 	
 	buildMP4segments() {

@@ -362,6 +362,14 @@
 				}
 			}
 			*/
+			function invalidateAll() {
+				if( adapter != null ) {
+					adapter.invalidate() ;
+				}
+				if( adapterAudio != null ) {
+					adapterAudio.invalidate() ;
+				}
+			}
 			function closeAll() {
 				//document.getElementById('div_table').style.display = 'none' ;
 				if( socket != null ) {
