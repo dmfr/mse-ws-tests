@@ -201,7 +201,9 @@ class H264adapter {
 		}
 		this.isMP4initialized = false ;
 		
-		this.videoEl.pause() ;
+		const videoEl = this.videoEl ;
+		videoEl.pause() ;
+		videoEl.currentTime = videoEl.seekable.end(0) ; //HACK ?
 	}
 	terminate() {
 		if( this.sourceBuffer ) {
