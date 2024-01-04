@@ -62,7 +62,7 @@
 			/* Modal Content */
 			.modal-content {
 				background-color: #fefefe;
-				margin: 50px;
+				margin: 40px;
 				border: 1px solid #888;
 				width: calc(100vw - 100px);
 				height: calc(100vh - 100px);
@@ -97,6 +97,14 @@
 				width:100%;
 				height:100%;
 			}
+			.modal-row-footer {
+				display: table-row;
+				width:100%;
+			}
+			.modal-cell-footer {
+				display: table-cell;
+				width:100%;
+			}
 			/* https://stackoverflow.com/questions/23248441/resizing-video-element-to-parent-div */
 			.videocontainer {
 				height: 100% ;
@@ -106,6 +114,11 @@
 				position: absolute;
 				width:100%;
 				height:100%;
+			}
+			.seekbar {
+				width: 100%;
+				height: 2px;
+				cursor: ew-resize;
 			}
 			/* **************************** */
 		</style>
@@ -448,12 +461,15 @@
 			}
 			
 			function openPlayer() {
+				document.body.style.overflow = 'hidden' ;
 				document.getElementById('playerModal').style.display='block';
+				document.getElementById('playerSeekbar').style.display='none';
 			
 			}
 			function closePlayer() {
 				closeAll() ;
 				document.getElementById('playerModal').style.display='none';
+				document.body.style.overflow = 'auto' ;
 			}
 			
 			
@@ -494,6 +510,11 @@
 						<div class="modal-cell-body">
 							<div class="videocontainer"><video id='tag_video' /></div>
 							<div class="audiocontainer"><audio id='tag_audio' /></div>
+						</div>
+					</div>
+					<div class="modal-row-footer">
+						<div class="modal-cell-footer">
+							<input id="playerSeekbar" class="seekbar" type="range" min="0" max="100" step="1"></input>
 						</div>
 					</div>
 				</div>
