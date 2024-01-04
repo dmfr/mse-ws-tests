@@ -60,9 +60,30 @@ if( (workerData != null) && (workerData.streams) ) {
 
 
 
-function doReplayStreams() {
+function doReplayStreams(offsetFloat=0) {
+	let lengthBytes = 0 ;
+	for( const stream of streams ) {
+		if( !stream.offsets ) {
+			lengthBytes = null ;
+			break ;
+		}
+		const streamOffsets = stream.offsets ;
+		lengthBytes += streamOffsets[streamOffsets.length-1] ;
+	}
+	console.log('lengthBytes is '+lengthBytes) ;
+	if( lengthBytes > 0 ) {
+		let offsetBytes = 0 ;
+		
+		// TODO : calc startOffset(s)
+		
+		publishPosition({lengthBytes,offsetBytes});
+	}
+	
+	
+	
+	
 	//console.log('doReplayStreams') ;
-	//console.dir(streams) ;
+	//console.dir(streams,{'maxArrayLength': null});
 	streams.forEach( (stream,id) => {
 		fsPromises.open(stream.filepath).then(async (fileHandle) => {
 			stream.fileHandle = fileHandle ;
@@ -122,6 +143,12 @@ function doReplayStreams() {
 			}, stream.intervalMs);
 		});
 	});
+}
+
+async function publishPosition(obj) {
+	if( parentPort ) {
+		parentPort.postMessage({ data:JSON.stringify(obj) });
+	}
 }
 
 async function consumeFrames(streamId,nbFrames,silent=false) {
