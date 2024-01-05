@@ -21,11 +21,15 @@ const debugPathSave = '/var/lib/mse-websocket-save' ;
 const debugFileId = '9285d906-98ef-45f2-a133-c4f25bca8e1c' ;
 
 let streams = null ;
+let seekCoef = 0 ;
 
 // ***** main() ***********
 if( (workerData != null) && (workerData.streams) ) {
 	streams = JSON.parse(workerData.streams) ;
-	doReplayStreams() ;
+	if( workerData.seekCoef ) {
+		seekCoef = workerData.seekCoef ;
+	}
+	doReplayStreams(seekCoef) ;
 } else if( debugFileId ) {
 	const worker = new Worker("./server-fileworker-list.js", {workerData:{fileId:debugFileId}});
 	worker.on("message", function(message){
@@ -60,7 +64,7 @@ if( (workerData != null) && (workerData.streams) ) {
 
 
 
-function doReplayStreams(offsetFloat=0) {
+function doReplayStreams(seekCoef=0) {
 	let lengthBytes = 0 ;
 	for( const stream of streams ) {
 		if( !stream.offsets ) {
@@ -74,13 +78,35 @@ function doReplayStreams(offsetFloat=0) {
 	if( lengthBytes > 0 ) {
 		let offsetBytes = 0 ;
 		
-		// TODO : calc startOffset(s)
+		// NOTE : calc startOffset(s)
+		if( seekCoef > 0 ) {
+			let seekSeconds = 0 ;
+			for( const stream of streams ) {
+				if( stream.type=='video' ) {
+					const seekIdx = Math.round(stream.offsets.length * seekCoef) ;
+					stream.seekIdx = seekIdx ;
+					
+					const streamFps = stream.videoFps || 30 ;
+					seekSeconds = seekIdx / streamFps ;
+					
+					offsetBytes+= stream.offsets[seekIdx]
+					break ;
+				}
+			}
+			if( seekSeconds > 0 ) {
+				for( const stream of streams ) {
+					if( stream.type=='audio' ) {
+						const streamFps = AAC_SAMPLERATE / AAC_SAMPLES_PER_FRAME ;
+						const seekIdx = Math.round(streamFps * seekSeconds) ;
+						stream.seekIdx = seekIdx ;
+						offsetBytes+= stream.offsets[seekIdx]
+					}
+				}
+			}
+		}
 		
 		publishPosition({lengthBytes,offsetBytes});
 	}
-	
-	
-	
 	
 	//console.log('doReplayStreams') ;
 	//console.dir(streams,{'maxArrayLength': null});
@@ -94,16 +120,16 @@ function doReplayStreams(offsetFloat=0) {
 					streamFps = stream.videoFps || 30 ;
 					stream.streamFps = streamFps ;
 					stream.intervalMs = 1000 * (1/streamFps) ;
-					stream.currentFrameIdx = 0 ;
-					stream.countSent = 0 ;
+					stream.currentFrameIdx = stream.seekIdx || 0 ;
+					stream.countSent = stream.seekIdx || 0 ;
 					break ;
 				case 'audio' :
 					stream.mediaReader = new adtsReader(fileHandle) ;
 					streamFps = AAC_SAMPLERATE / AAC_SAMPLES_PER_FRAME ;
 					stream.streamFps = streamFps ;
 					stream.intervalMs = 1000 * (1/streamFps) ;
-					stream.currentFrameIdx = 0 ;
-					stream.countSent = 0 ;
+					stream.currentFrameIdx = stream.seekIdx || 0 ;
+					stream.countSent = stream.seekIdx || 0 ;
 					break ;
 			}
 			if( !USE_OFFSETCACHE || !stream.offsets ) {

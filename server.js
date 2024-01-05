@@ -65,7 +65,7 @@ wss.on('connection', function connection(ws) {
 		clients.set(ws,{id,type}) ;
 		
 		// setup worker
-		const worker = new Worker("./server-fileworker-replay.js", {workerData:{streams:JSON.stringify(ws.targetReplayStreams)}});
+		const worker = new Worker("./server-fileworker-replay.js", {workerData:{streams:JSON.stringify(ws.targetReplayStreams), seekCoef:ws.seekCoef}});
 		worker.on("message", function(message){
 			ws.send(message.data) ;
 		});
@@ -211,6 +211,7 @@ server.on('upgrade', function upgrade(request, socket, head) {
 			if( !fileId ) {
 				return socket.destroy() ;
 			}
+			const seekCoef = (query && query.seek) ? (Math.round(query.seek) / 1000) : 0 ;
 			console.log('requesting '+fileId) ;
 			
 			const worker = new Worker("./server-fileworker-list.js", {workerData:{fileId:fileId}});
@@ -242,6 +243,7 @@ server.on('upgrade', function upgrade(request, socket, head) {
 				wss.handleUpgrade(request, socket, head, function done(ws) {
 					ws.targetFileId = fileId ;
 					ws.targetReplayStreams = replayStreams ;
+					ws.seekCoef = seekCoef ;
 					wss.emit('connection', ws, request);
 				});
 			});
