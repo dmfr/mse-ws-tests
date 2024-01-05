@@ -170,7 +170,7 @@
 			}
 			function seekFile(offsetFloat) {
 				if( socket && socket_replayBaseUrl ) {
-					const seekUrl = socket_replayBaseUrl + '&offset='+ Math.round( offsetFloat*1000 ) ;
+					const seekUrl = socket_replayBaseUrl + '&seek='+ Math.round( offsetFloat*1000 ) ;
 					socket.addEventListener('close',() => {
 						setTimeout(() => {
 							openWss(seekUrl) ;
@@ -456,7 +456,8 @@
 				seekIsFocus = true ;
 			}
 			function onSeekbarChange() {
-				seekFile(0) ;
+				const seekbar = document.getElementById('playerSeekbar') ;
+				seekFile(seekbar.value / seekbar.max) ;
 				seekIsFocus = false ;
 			}
 			function updateSeekbar() {
