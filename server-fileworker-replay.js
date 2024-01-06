@@ -121,7 +121,7 @@ function doReplayStreams(seekCoef=0) {
 					stream.streamFps = streamFps ;
 					stream.intervalMs = 1000 * (1/streamFps) ;
 					stream.currentFrameIdx = stream.seekIdx || 0 ;
-					stream.countSent = stream.seekIdx || 0 ;
+					stream.countSent = 0 ;
 					break ;
 				case 'audio' :
 					stream.mediaReader = new adtsReader(fileHandle) ;
@@ -129,7 +129,7 @@ function doReplayStreams(seekCoef=0) {
 					stream.streamFps = streamFps ;
 					stream.intervalMs = 1000 * (1/streamFps) ;
 					stream.currentFrameIdx = stream.seekIdx || 0 ;
-					stream.countSent = stream.seekIdx || 0 ;
+					stream.countSent = 0 ;
 					break ;
 			}
 			if( !USE_OFFSETCACHE || !stream.offsets ) {
