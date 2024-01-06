@@ -175,6 +175,7 @@ class H264adapter {
 	}
 	
 	invalidate() {
+		this.isMP4initialized = false ;
 		this.sourceBuffer.abort() ;
 		
 		if( this.videoTrack ) {
@@ -199,7 +200,6 @@ class H264adapter {
 				config:[],
 			});
 		}
-		this.isMP4initialized = false ;
 		
 		const videoEl = this.videoEl ;
 		videoEl.pause() ;
