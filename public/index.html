@@ -367,11 +367,11 @@
 					adapter.videoEl.currentTime = adapter.sourceBuffer.buffered.end(0) - 1 ;
 				}
 			}
-			function debugForceAudioSeek(seekSecs) {
+			function debugForceAudioEnd() {
 				if( adapterAudio ) {
 					// force 1sec delay for test
 					console.dir(adapterAudio.videoEl.currentTime) ;
-					adapterAudio.videoEl.currentTime = adapterAudio.videoEl.currentTime + seekSecs ;
+					adapterAudio.videoEl.currentTime = adapterAudio.videoEl.seekable.end(0) ;
 				}
 			}
 			/*
@@ -538,10 +538,11 @@
 			document.getElementById('btn3').addEventListener('click', ()=>{openFile('e3bacf0c-a0c5-4a26-bed5-dd14a184d2c6')}) ;
 			document.getElementById('btn50').addEventListener('click', ()=>{openList()}) ;
 			document.getElementById('btn51').addEventListener('click', ()=>{closeAll()}) ;
+			document.getElementById('btn99').addEventListener('click', ()=>{debugForceAudioEnd()}) ;
 			// document.getElementById('btn98').addEventListener('click', ()=>{debugForceAudioSeek(-0.1)}) ;
 			// document.getElementById('btn99').addEventListener('click', ()=>{debugForceAudioSeek(+0.15)}) ;
-			document.getElementById('btn98').addEventListener('click', ()=>{seekFile(0.29)}) ;
-			document.getElementById('btn99').addEventListener('click', ()=>{seekFile(0.27)}) ;
+			// document.getElementById('btn98').addEventListener('click', ()=>{seekFile(0.29)}) ;
+			// document.getElementById('btn99').addEventListener('click', ()=>{seekFile(0.27)}) ;
 			
 			document.getElementById('playerSeekbar').addEventListener('input', ()=>{onSeekbarInput()}) ;
 			document.getElementById('playerSeekbar').addEventListener('change', ()=>{onSeekbarChange()}) ;
@@ -556,8 +557,8 @@
 				<!-- Modal content -->
 				<div class="modal-content">
 					<div class="modal-row-header">
-						<span style="float:left ; margin-right:24px"><input type="button" value="Debug -" id='btn98' /></span>
-						<span style="float:left ; margin-right:24px"><input type="button" value="Debug +" id='btn99' /></span>
+						<span style="float:left ; margin-right:24px"><input type="button" value="DbgAudio --" id='btn99' /></span>
+						<!--<span style="float:left ; margin-right:24px ; display:none"><input type="button" value="Debug +" id='btn99' /></span>-->
 						<span style="float:left ; margin-right:50px" id='caption'>&nbsp;</span>
 						<span style="float:left ; margin-right:50px" id='caption2'>&nbsp;</span>
 						<span style="float:left ; margin-right:50px" id='caption3'>&nbsp;</span>
