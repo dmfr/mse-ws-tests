@@ -40,6 +40,7 @@ class H264adapter {
 		
 		this.MP4_timescale = 90000 ;
 		
+		let track_id = 0xffffffff ;
 		if( true && (videoEl.nodeName=='VIDEO') ) {
 			this.videoTrack = {
 				type: 'video',
@@ -57,7 +58,7 @@ class H264adapter {
 				frameDuration: this.MP4_timescale * (1 / (this.videoFps + (this.browserEnableFasterFps ? 1 : 0))),
 				frameCount: 0,
 				duration: 0,
-				id: 1,
+				id: track_id--,
 				
 				nextMP4sequence: 0,
 				nextRunningTS: 0,
@@ -80,7 +81,7 @@ class H264adapter {
 				frameDuration: this.MP4_timescale * (1024 / 44100),
 				frameCount: 0,
 				duration: 0,
-				id: 2,
+				id: track_id--,
 				
 				nextMP4sequence: 0,
 				nextRunningTS: 0,
@@ -672,7 +673,7 @@ class H264adapter {
 				isNonSync : isKey ? 0 : 1
 			}
 		} ;
-		let moof = MP4.moof(this.videoTrack.nextMP4sequence++, runningTs  , {id:1, samples:[moofObj]});
+		let moof = MP4.moof(this.videoTrack.nextMP4sequence++, runningTs  , {id:this.videoTrack.id, samples:[moofObj]});
 		
 		/*
 		this.MP4segmentsQueue.push( moof ) ;
@@ -718,7 +719,7 @@ class H264adapter {
 				isNonSync : 0,
 			}
 		} ;
-		let moof = MP4.moof(this.audioTrack.nextMP4sequence++, runningTs  , {id:2, type:'audio', samples:[moofObj]});
+		let moof = MP4.moof(this.audioTrack.nextMP4sequence++, runningTs  , {id:this.audioTrack.id, type:'audio', samples:[moofObj]});
 		
 		/*
 		this.MP4segmentsQueue.push( moof ) ;
