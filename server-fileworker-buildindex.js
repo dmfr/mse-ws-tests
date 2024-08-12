@@ -51,6 +51,9 @@ async function buildIndexVideo( videoreader ) {
 	
 	const offsets = [] ;
 	const { newOffset, data } = await videoreader.buildFromOffset(0) ;
+	if( data == null ) {
+		return {} ;
+	}
 	offsets.push(newOffset-data.length) ;
 	let offset = 0 ;
 	while(true) {
@@ -70,6 +73,9 @@ async function buildIndexAudio( audioreader ) {
 	
 	const offsets = [] ;
 	const { newOffset, data } = await audioreader.buildFromOffset(0) ;
+	if( data == null ) {
+		return {} ;
+	}
 	offsets.push(newOffset-data.length) ;
 	let offset = 0 ;
 	while(true) {
