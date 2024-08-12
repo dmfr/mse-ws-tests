@@ -177,7 +177,9 @@ class H264adapter {
 	
 	invalidate() {
 		this.isMP4initialized = false ;
-		this.sourceBuffer.abort() ;
+		if( this.sourceBuffer ) {
+			this.sourceBuffer.abort() ;
+		}
 		
 		if( this.videoTrack ) {
 			Object.assign(this.videoTrack,{
