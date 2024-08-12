@@ -74,6 +74,17 @@ function doReplayStreams(seekCoef=0) {
 		const streamOffsets = stream.offsets ;
 		lengthBytes += streamOffsets[streamOffsets.length-1] ;
 	}
+	
+	// FIX 12/08/2024 : adjust videoFPs from audio length
+	const streamVideo = streams.find(item => item.type === 'video'),
+		streamAudio = streams.find(item => item.type === 'audio');
+	if( streamVideo!=null && streamAudio!=null ) {
+		const audioFps = AAC_SAMPLERATE / AAC_SAMPLES_PER_FRAME ;
+		const videoCalcFps = ( streamVideo.offsets.length ) * audioFps / streamAudio.offsets.length ;
+		console.log('videoCalcFps='+videoCalcFps) ;
+		streamVideo.videoFps = videoCalcFps ;
+	}
+	
 	console.log('lengthBytes is '+lengthBytes) ;
 	if( lengthBytes > 0 ) {
 		let offsetBytes = 0 ;
