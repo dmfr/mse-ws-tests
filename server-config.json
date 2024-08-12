@@ -1,5 +1,5 @@
 {
 	"ssl_path":"/etc/letsencrypt/live/int.mirabel-sil.com/",
 	
-	"filestore_path":"/var/lib/mse-websocket-save"
+	"filestore_path":"/var/lib/mse-storage-nfs"
 }
