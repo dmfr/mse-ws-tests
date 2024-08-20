@@ -325,8 +325,14 @@ function registerService(ws) {
 		ws.writeStreamVideo = createWriteStream(ws.writePathVideo) ;
 		ws.writePathAudio = pathSave+'/'+id+'.'+fileExtensionAudio ;
 		ws.writeStreamAudio = createWriteStream(ws.writePathAudio) ;
+		
+		// setup worker
+		const worker = new Worker("./server-streamworker.js", {workerData:{videoFormat:ws.videoFormat}});
+		ws.streamWorker = worker ;
 	}
-	ws.on('message', function message(data) {
+	
+	// inbound message from websocket >> forward to streamworker
+	ws.on('message', async function message(data) {
 		ws.last_ts = Date.now() ;
 		
 		/*
@@ -346,36 +352,19 @@ function registerService(ws) {
 		if( ws.isECcam ) {
 			data = ECcam_onMessageStripHeader(data) ;
 		}
-		//console.dir(data);
-		//console.log( 'received : %s',data) ;
-		//console.log('received') ;
+		ws.streamWorker.postMessage({data:data});
+	});
+	
+	// message back from streamworker
+	ws.streamWorker.on("message", function(message){
+		const dataType = message.dataType ;
+		const data = message.data ;
+		
 		clients.forEach( function(meta,clientWs) {
 			if( clientWs.targetServiceWs === ws ) {
 				clientWs.send(data) ;
 			}
 		});
-		data = new Uint8Array(data) ;
-		var dataType = null ;
-		switch( data[0] ) {
-			case 0x01 : // private byte prefix for video (unused)
-				data = data.subarray(1,data.byteLength) ;
-				dataType = 'video' ;
-				break ;
-			case 0x00 : // AVC/HEVC NALs starts with 0x00
-				dataType = 'video' ;
-				break ;
-				
-			case 0x02 : // private byte prefix for audio (unused)
-				data = data.subarray(1,data.byteLength) ;
-				dataType = 'audio' ;
-				break ;
-			case 0xFF : // ADTS starts with 0xFF
-				dataType = 'audio' ;
-				break ;
-				
-			default:
-				break ;
-		}
 		if( (dataType=='video') && ws.writeStreamVideo ) {
 			ws.hasVideo = true ;
 			ws.writeStreamVideo.write(data) ;
@@ -385,7 +374,11 @@ function registerService(ws) {
 			ws.writeStreamAudio.write(data) ;
 		}
 	});
+	
 	ws.on('close', function close() {
+		if( ws.streamWorker ) {
+			ws.streamWorker.terminate();
+		}
 		if( ws.writeStreamVideo ) {
 			ws.writeStreamVideo.end() ;
 			ws.writeStreamVideo = null ;

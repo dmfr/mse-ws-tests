@@ -8,6 +8,7 @@ import { Worker } from "worker_threads" ;
 
 import adtsReader from './server-lib-adtsReader.js' ;
 import h264reader from './server-lib-h264reader.js' ;
+import h264streamer from './server-lib-h264streamer.js' ;
 
 const AAC_SAMPLES_PER_FRAME = 1024;
 const AAC_SAMPLERATE = 44100 ; // TODO ?
@@ -17,7 +18,7 @@ const BUFFER_CHUNK_SIZE = (30 * 3);  // 3sec ?
 const USE_BUFFER = true ;
 const USE_OFFSETCACHE = true ;
 
-const debugPathSave = '/var/lib/mse-websocket-save' ;
+const debugPathSave = '/var/lib/mse-storage-nfs' ;
 const debugFileId = '9285d906-98ef-45f2-a133-c4f25bca8e1c' ;
 
 let streams = null ;
@@ -121,6 +122,7 @@ function doReplayStreams(seekCoef=0) {
 	
 	//console.log('doReplayStreams') ;
 	//console.dir(streams,{'maxArrayLength': null});
+	const firstTs = Date.now() ;
 	streams.forEach( (stream,id) => {
 		fsPromises.open(stream.filepath).then(async (fileHandle) => {
 			stream.fileHandle = fileHandle ;
@@ -133,6 +135,10 @@ function doReplayStreams(seekCoef=0) {
 					stream.intervalMs = 1000 * (1/streamFps) ;
 					stream.currentFrameIdx = stream.seekIdx || 0 ;
 					stream.countSent = 0 ;
+					
+					stream.mediaStreamer = new h264streamer(h264reader.getVideoFormatFromPath(stream.filepath)) ;
+					await stream.mediaStreamer.initFromFile(fileHandle);
+					
 					break ;
 				case 'audio' :
 					stream.mediaReader = new adtsReader(fileHandle) ;
@@ -149,7 +155,7 @@ function doReplayStreams(seekCoef=0) {
 			if( USE_BUFFER ) {
 				runBufferThread(id) ;
 			}
-			stream.firstTs = Date.now() ;
+			stream.firstTs = firstTs;
 			stream.timer = setInterval(() => {
 				let nbFramesToSend = 1 ;
 				
@@ -189,15 +195,19 @@ async function publishPosition(obj) {
 }
 
 async function consumeFrames(streamId,nbFrames,silent=false) {
+	const stream = streams[streamId];
 	let returnEof = false ;
 	for( let i=0 ; i<nbFrames ; i++ ) {
-		const {data,isEof} = await getNextFrame(streamId) ;
+		let {data,isEof} = await getNextFrame(streamId) ;
 		if( isEof ) {
 			returnEof = true ;
 			break ;
 		}
 		if( silent ) {
 			continue ;
+		}
+		if( (data!=null) && stream.mediaStreamer ) {
+			data = stream.mediaStreamer.streamData(data) ;
 		}
 		if( (data!=null) && parentPort ) {
 			parentPort.postMessage({ data });
