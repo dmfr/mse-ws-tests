@@ -61,7 +61,7 @@ class h264streamer {
 	
 	getNalUnits( uarray ) {
     var i = 0, len = uarray.byteLength, value, overflow, state = 0; //state = this.avcNaluState;
-    var units = [], unit, unitType, lastUnitStart, lastUnitType; 
+    var units = [], unit, unitType, lastUnitStart, lastUnitType, lastUnitState;
     while (i < len) {
       value = uarray[i++];
       // finding 3 or 4-byte start codes (00 00 01 OR 00 00 00 01)
@@ -95,12 +95,13 @@ class h264streamer {
 						 break ;
 				 }
             if (lastUnitStart) {
-              unit = {rawdata: uarray.subarray(lastUnitStart - state - 1, i - state - 1 ), type: lastUnitType}; 
+              unit = {rawdata: uarray.subarray(lastUnitStart - lastUnitState - 1, i - state - 1 ), type: lastUnitType};
               units.push(unit); 
             } else { 
             }
             lastUnitStart = i;
             lastUnitType = unitType;
+            lastUnitState = state;
             state = 0;
           } else {
             state = 0;
@@ -112,7 +113,7 @@ class h264streamer {
     }
 
     if (lastUnitStart) { 
-      unit = {rawdata: uarray.subarray(lastUnitStart - state - 1, len), type: lastUnitType, state : state};
+      unit = {rawdata: uarray.subarray(lastUnitStart - lastUnitState - 1, len), type: lastUnitType, state : state};
       units.push(unit); 
     }
 
