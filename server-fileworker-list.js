@@ -68,8 +68,11 @@ async function buildFilesList( filestore_path ) {
 			}
 		}
 		if( ['.h264','.avc','.hevc'].includes(path.extname(file)) ) {
-			filesList[fileUUID]['file_stream'] = file ;
 			const infos = await fsPromises.stat(filestore_path + '/' + file) ;
+			if( infos.size <= 0 ) {
+				return ;
+			}
+			filesList[fileUUID]['file_stream'] = file ;
 			if( !filesList[fileUUID].hasOwnProperty('date') ) {
 				filesList[fileUUID]['date'] = infos.mtime.toISOString() ;
 			}
@@ -80,8 +83,11 @@ async function buildFilesList( filestore_path ) {
 			}
 		}
 		if( ['.aac'].includes(path.extname(file)) ) {
-			filesList[fileUUID]['file_audio'] = file ;
 			const infos = await fsPromises.stat(filestore_path + '/' + file) ;
+			if( infos.size <= 0 ) {
+				return ;
+			}
+			filesList[fileUUID]['file_audio'] = file ;
 			filesList[fileUUID]['size']+= infos.size ;
 		}
 	}));
