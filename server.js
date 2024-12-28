@@ -111,6 +111,7 @@ server.on('request',function request(request,response) {
 					remoteAddress: ws.remoteAddress,
 					initTs: ws.init_ts,
 				  
+					fps: ws.videoFps,
 					format: ws.videoFormat,
 					audio: ws.audioEnabled,
 				})
@@ -161,6 +162,7 @@ server.on('upgrade', function upgrade(request, socket, head) {
 	
 	switch( pathname ) {
 		case '/record' :
+			const videoFps = (query && query.fps) ? query.fps : 30 ;
 			const videoFormat = (query && query.format) ? query.format : 'avc' ;
 			const audioEnabled = (query && query.audio && (query.audio >= 1)) ? true : false ;
 			switch( videoFormat ) {
@@ -173,8 +175,9 @@ server.on('upgrade', function upgrade(request, socket, head) {
 			wss.handleUpgrade(request, socket, head, function done(ws) {
 				ws.isRecordSource = true ;
 				ws.remoteAddress = socket.remoteAddress ;
+				ws.videoFps = videoFps ;
 				ws.videoFormat = videoFormat ;
-				ws.audioEnabled = audioEnabled
+				ws.audioEnabled = audioEnabled ;
 				wss.emit('connection', ws, request);
 			});
 			break ;
@@ -305,7 +308,8 @@ function registerService(ws) {
 		const obj = {
 			id: id,
 			tsStart: ws.init_ts,
-			remoteAddress: ws.remoteAddress
+			remoteAddress: ws.remoteAddress,
+			fps: ws.videoFps,
 		} ;
 		writeFile(filepathDat,JSON.stringify(obj),()=>{}) ;
 		
