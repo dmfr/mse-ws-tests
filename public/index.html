@@ -343,12 +343,16 @@
 						if( data.length > 0 ) {
 							htmlTable += '<table>' ;
 							data.forEach((row) => {
+								let format_and_fps = row.format
+								if( row.fps && (row.fps!=30) ) {
+									format_and_fps += ' / '+row.fps+'fps' ;
+								}
 								const hasAudio = (row.audio ? 1 : 0) ;
 								//console.dir(row) ;
 								htmlTable += '<tr data-type="play" data-uuid="'+row.id+'" data-format="'+row.format+'" data-audio="'+hasAudio+'">' ;
 								htmlTable += '<td>'+"LIVE"+'</td>' ;
 								htmlTable += '<td>'+row.id+'</td>' ;
-								htmlTable += '<td class="tcenter">'+row.format+'</td>' ;
+								htmlTable += '<td class="tcenter">'+format_and_fps+'</td>' ;
 								if( row.remoteAddress ) {
 									htmlTable += '<td>'+row.remoteAddress+'</td>' ;
 								}
