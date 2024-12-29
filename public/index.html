@@ -80,6 +80,7 @@
 				float: right;
 				font-size: 28px;
 				font-weight: bold;
+				line-height: 22px;
 			}
 			.close:hover,
 			.close:focus {
@@ -529,6 +530,14 @@
 				document.body.style.overflow = 'auto' ;
 			}
 			
+			function setFullscreen(torf) {
+				if( torf ) {
+					document.getElementsByClassName("videocontainer")[0].requestFullscreen({ navigationUI: "hide" });
+				} else {
+					document.exitFullscreen();
+				}
+			}
+			
 			
 			updateCaption() ;
 			addEventListener('resize', (event) => {
@@ -543,6 +552,7 @@
 			document.getElementById('btn50').addEventListener('click', ()=>{openList()}) ;
 			document.getElementById('btn51').addEventListener('click', ()=>{closeAll()}) ;
 			document.getElementById('btn99').addEventListener('click', ()=>{debugForceAudioEnd()}) ;
+			document.getElementById('btnFullscreen').addEventListener('click', ()=>{setFullscreen(true)}) ;
 			// document.getElementById('btn98').addEventListener('click', ()=>{debugForceAudioSeek(-0.1)}) ;
 			// document.getElementById('btn99').addEventListener('click', ()=>{debugForceAudioSeek(+0.15)}) ;
 			// document.getElementById('btn98').addEventListener('click', ()=>{seekFile(0.29)}) ;
@@ -566,8 +576,9 @@
 						<span style="float:left ; margin-right:50px" id='caption'>&nbsp;</span>
 						<span style="float:left ; margin-right:50px" id='caption2'>&nbsp;</span>
 						<span style="float:left ; margin-right:50px" id='caption3'>&nbsp;</span>
-					
+						
 						<span id="myClose" class="close">&times;</span>
+						<span style="float:right ; margin-right:24px"><input type="button" value="Fullscreen" id='btnFullscreen' /></span>
 					</div>
 					<div class="modal-row-body">
 						<div class="modal-cell-body">
