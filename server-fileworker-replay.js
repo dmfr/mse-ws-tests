@@ -79,7 +79,7 @@ function doReplayStreams(seekCoef=0) {
 	// FIX 12/08/2024 : adjust videoFPs from audio length
 	const streamVideo = streams.find(item => item.type === 'video'),
 		streamAudio = streams.find(item => item.type === 'audio');
-	if( streamVideo!=null && streamAudio!=null ) {
+	if( streamVideo!=null && streamAudio!=null && lengthBytes>0 ) {
 		const audioFps = AAC_SAMPLERATE / AAC_SAMPLES_PER_FRAME ;
 		const videoCalcFps = ( streamVideo.offsets.length ) * audioFps / streamAudio.offsets.length ;
 		console.log('videoCalcFps='+videoCalcFps) ;
