@@ -128,11 +128,13 @@
 <!-- 		<script type="text/javascript" src="./wfs.js"></script> -->
 		<script type="module">
 			import H264adapter from './h264-adapter.js' ;
+			import WebcodecAdapter from './webcodec-adapter.js' ;
 			
 			let socket = null, adapter = null, adapterAudio = null;
 			let socketBytes = 0 ;
 			let socketBlobs = [] ;
 			let socketTs = null ;
+			let audioContext = null, webaudioNode = null ;
 			
 			// NOTE : tmp? for replay seek
 			let socket_replayBaseUrl = null ;
@@ -144,6 +146,8 @@
 			let _wfs ;
 			
 			let _debug ;
+			
+			const USE_AUDIO_WEBCODEC = false ;
 			
 			function onWindowResize(ev) {
 				console.log('onWindowResize') ;
@@ -414,6 +418,9 @@
 					adapterAudio.terminate() ;
 					adapterAudio = null ;
 				}
+				if( audioContext != null ) {
+					stopWebAudio() ;
+				}
 			}
 			function downloadBlob() {
 				if( socketBlobs.length == 0 ) {
@@ -515,13 +522,24 @@
 				// 		socketBlobs.push(new Blob([obj.debug])) ;
 				// 	}
 				// });
-				if( videoInfo.audio ) {
-					adapterAudio = new H264adapter( document.getElementById('tag_audio'), videoInfo ) ;
+				if( videoInfo.audio && !USE_AUDIO_WEBCODEC ) {
+					adapterAudio = new H264adapter( document.getElementById('tag_audio'), videoInfo, false );
 					adapterAudio.setListenerFn( function(obj) {
 						if( obj.playDelay != null ) {
 							updateCaptionJitter(obj.playDelay) ;
 						}
 					});
+				}
+				if( videoInfo.audio && USE_AUDIO_WEBCODEC && (webaudioNode!=null) ) {
+					startWebAudio() ;
+					adapterAudio = new WebcodecAdapter( videoInfo, null, (audioData)=>{
+						const interleavingBuffers = new Array(audioData.numberOfChannels);
+						for (var i = 0; i < interleavingBuffers.length; i++) {
+							interleavingBuffers[i] = new Float32Array(audioData.numberOfFrames);
+							audioData.copyTo(interleavingBuffers[i], { planeIndex: i });
+						}
+						webaudioNode.port.postMessage(interleavingBuffers);
+					} ) ;
 				}
 			}
 			function closePlayer() {
@@ -535,6 +553,17 @@
 					document.getElementsByClassName("videocontainer")[0].requestFullscreen({ navigationUI: "hide" });
 				} else {
 					document.exitFullscreen();
+				}
+			}
+			
+			function startWebAudio() {
+				if( audioContext != null ) {
+					audioContext.resume();
+				}
+			}
+			function stopWebAudio() {
+				if( audioContext ) {
+					audioContext.suspend() ;
 				}
 			}
 			
@@ -564,6 +593,28 @@
 			document.getElementById('div_table').addEventListener('click', onTableClick) ;
 			
 			document.getElementById('myClose').addEventListener('click', closePlayer) ;
+			
+			
+			
+			
+			
+			
+			
+			if( USE_AUDIO_WEBCODEC ) {
+				audioContext = new AudioContext({
+					latencyHint: "playback",
+					sampleRate: 44100,
+				});
+				await audioContext.audioWorklet.addModule("webaudio-processor.js");
+				webaudioNode = new AudioWorkletNode(audioContext,"webaudio-processor",{
+					outputChannelCount: [2],
+					processorOptions: {
+						outputChannelCount: 2
+					},
+				});
+				webaudioNode.connect(audioContext.destination);
+				audioContext.suspend();
+			}
 		</script>
 		<body>
 			<!-- The Modal -->
