@@ -62,6 +62,11 @@ class WebcodecAdapter {
 				dataCb: audiodataCb
 			};
 		}
+		
+		this.audioWorker = new Worker('webcodec-audio-worker.js');
+		this.audioWorker.onmessage = (e) => {
+			this.audioTrack.dataCb(e.data);
+		};
 	}
 	setListenerFn(fn) {
 		if( typeof fn === 'function' ) {
@@ -94,6 +99,9 @@ class WebcodecAdapter {
 		}
 	}
 	terminate() {
+		if( this.audioWorker != null ) {
+			this.audioWorker.terminate();
+		}
 	}
 	
 	
@@ -122,32 +130,25 @@ class WebcodecAdapter {
 			this.audioTrack.channelCount = audioConfig.channelCount ;
 			this.audioTrack.ready = true ;
 			
-			this.audioDecoder = new AudioDecoder({
-				output: this.audioTrack.dataCb,
-				error: e => console.error(e)
-			}) ;
-			this.audioDecoder.configure({
+			this.audioWorker.postMessage({ configure: {
 				codec: audioConfig.codec,
 				description: new Uint8Array(audioConfig.config),
 				numberOfChannels: audioConfig.channelCount,
 				sampleRate:audioConfig.samplerate,
-			});
+			}});
 		}
 		if( this.audioTrack.ready ) {
 			const headerLength = adts.getHeaderLength(uarray,0);
 			const frameLength = adts.getFullFrameLength(uarray,0);
 			this.audioTrack.nextRunningTS += this.audioTrack.frameDuration ;
 			this.audioTrack.frameCount++ ;
-			if( this.audioDecoder ) {
-				var chunk = new EncodedAudioChunk({
-					type: 'key',
-					timestamp: ((this.audioTrack.frameCount - 1 ) * 1000000 * 1024 / 44100),
-					duration: (1000000 * 1024 / 44100 ),
-					data: uarray.subarray(headerLength,frameLength),
-				});
-				this.audioDecoder.decode(chunk);
-				return ;
-			}
+			
+			this.audioWorker.postMessage({ decode: {
+				type: 'key',
+				timestamp: ((this.audioTrack.frameCount - 1 ) * 1000000 * 1024 / 44100),
+				duration: (1000000 * 1024 / 44100 ),
+				data: uarray.subarray(headerLength,frameLength),
+			}});
 		}
 		
 	}
