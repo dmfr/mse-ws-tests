@@ -486,6 +486,9 @@
 			
 			function onTableClick(ev) {
 				const trElement = ev.target.closest('tr') ;
+				if( !trElement ) {
+					return ;
+				}
 				if( trElement.dataset ) {
 					const dataset = trElement.dataset ;
 					//document.getElementById('div_table').style.display = 'none' ;
