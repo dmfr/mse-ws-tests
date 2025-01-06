@@ -533,12 +533,14 @@
 				if( videoInfo.audio && USE_AUDIO_WEBCODEC && (webaudioNode!=null) ) {
 					startWebAudio() ;
 					adapterAudio = new WebcodecAdapter( videoInfo, null, (audioData)=>{
-						const interleavingBuffers = new Array(audioData.numberOfChannels);
+						const interleavingBuffers = new Array(audioData.numberOfChannels),
+							transferables = [] ;
 						for (var i = 0; i < interleavingBuffers.length; i++) {
 							interleavingBuffers[i] = new Float32Array(audioData.numberOfFrames);
 							audioData.copyTo(interleavingBuffers[i], { planeIndex: i });
+							transferables.push(interleavingBuffers[i].buffer);
 						}
-						webaudioNode.port.postMessage(interleavingBuffers);
+						webaudioNode.port.postMessage(interleavingBuffers,transferables);
 					} ) ;
 				}
 			}
