@@ -401,6 +401,9 @@
 				if( adapterAudio != null ) {
 					adapterAudio.invalidate() ;
 				}
+				if( audioContext != null ) {
+					resetWebAudio() ;
+				}
 			}
 			function closeAll() {
 				//document.getElementById('div_table').style.display = 'none' ;
@@ -563,12 +566,18 @@
 			
 			function startWebAudio() {
 				if( audioContext != null ) {
+					resetWebAudio() ;
 					audioContext.resume();
 				}
 			}
 			function stopWebAudio() {
 				if( audioContext ) {
 					audioContext.suspend() ;
+				}
+			}
+			function resetWebAudio() {
+				if( webaudioNode != null ) {
+					webaudioNode.port.postMessage([]);
 				}
 			}
 			

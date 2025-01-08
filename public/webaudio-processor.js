@@ -53,6 +53,12 @@ class CircularBuffer {
 	size() {
 		return this.memory.length;
 	}
+	
+	clear() {
+		this.head = 0;
+		this.tail = 0;
+		this.isFull = false;
+	}
 }
 
 class WebaudioProcessor extends AudioWorkletProcessor {
@@ -69,6 +75,11 @@ class WebaudioProcessor extends AudioWorkletProcessor {
 			//console.log('filling buffer') ;
 			const interleavingBuffers = msg.data ;
 			//console.dir(interleavingBuffers) ;
+			if( interleavingBuffers.length == 0 ) {
+				this.buffer.clear();
+				return ;
+			}
+			
 			const nbOfSamples = interleavingBuffers[0].length ;
 			
 			for( var i=0 ; i<nbOfSamples ; i++ ) {
