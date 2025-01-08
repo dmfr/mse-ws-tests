@@ -139,8 +139,8 @@
 			// NOTE : tmp? for replay seek
 			let socket_replayBaseUrl = null ;
 			
-			// NOTE : Seeking todo
-			let seekByteOffset = null, seekByteLength = null ;
+			// NOTE : Seeking
+			let seekFramesOffset = null, seekFramesLength = null;
 			let seekIsFocus = false ;
 			
 			let _wfs ;
@@ -217,8 +217,8 @@
 						
 						_debug = null ;
 						
-						seekByteOffset = null ;
-						seekByteLength = null ;
+						seekFramesOffset = null ;
+						seekFramesLength = null ;
 					});
 					// Connection closed
 					socket.addEventListener('close', (event) => {
@@ -281,17 +281,17 @@
 							var obj = JSON.parse(event.data) ;
 							console.dir(obj) ;
 							// NOTE: enable seek
-							if( obj.lengthBytes ) {
-								seekByteLength = obj.lengthBytes ;
-								seekByteOffset = obj.offsetBytes ;
+							if( obj.lengthFrames ) {
+								seekFramesLength = obj.lengthFrames ;
+								seekFramesOffset = obj.offsetFrames ;
 							}
 						}
 						if( event.data instanceof ArrayBuffer ) {
 							//const firstByte = new DataView(event.data).getUint8(0) ; //NOTE : example, switch on first byte (video vs audio?)
 							//console.dir(event.data) ;
 							socketBytes += event.data.byteLength ;
-							if( seekByteLength != null ) {
-								seekByteOffset += event.data.byteLength ;
+							if( seekFramesLength != null ) {
+								seekFramesOffset++ ;
 								updateSeekbar() ;
 							}
 							//socketBlobs.push(new Blob(event.data)) ;
@@ -481,7 +481,7 @@
 				if( seekbar.style.display == 'none' ) {
 					seekbar.style.display='block';
 				}
-				seekbar.value = seekByteOffset * seekbar.max / seekByteLength ;
+				seekbar.value = seekFramesOffset * seekbar.max / seekFramesLength ;
 			}
 			
 			function onTableClick(ev) {

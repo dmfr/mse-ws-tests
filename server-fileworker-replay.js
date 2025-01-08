@@ -66,29 +66,29 @@ if( (workerData != null) && (workerData.streams) ) {
 
 
 function doReplayStreams(seekCoef=0) {
-	let lengthBytes = 0 ;
+	let lengthFrames = 0 ;
 	for( const stream of streams ) {
 		if( !stream.offsets ) {
-			lengthBytes = null ;
+			lengthFrames = null ;
 			break ;
 		}
 		const streamOffsets = stream.offsets ;
-		lengthBytes += streamOffsets[streamOffsets.length-1] ;
+		lengthFrames += streamOffsets.length - 1 ;
 	}
 	
 	// FIX 12/08/2024 : adjust videoFPs from audio length
 	const streamVideo = streams.find(item => item.type === 'video'),
 		streamAudio = streams.find(item => item.type === 'audio');
-	if( streamVideo!=null && streamAudio!=null && lengthBytes>0 ) {
+	if( streamVideo!=null && streamAudio!=null && lengthFrames>0 ) {
 		const audioFps = AAC_SAMPLERATE / AAC_SAMPLES_PER_FRAME ;
 		const videoCalcFps = ( streamVideo.offsets.length ) * audioFps / streamAudio.offsets.length ;
 		console.log('videoCalcFps='+videoCalcFps) ;
 		streamVideo.videoFps = videoCalcFps ;
 	}
 	
-	console.log('lengthBytes is '+lengthBytes) ;
-	if( lengthBytes > 0 ) {
-		let offsetBytes = 0 ;
+	console.log('lengthFrames is '+lengthFrames) ;
+	if( lengthFrames > 0 ) {
+		let offsetFrames = 0 ;
 		
 		// NOTE : calc startOffset(s)
 		if( seekCoef > 0 ) {
@@ -101,7 +101,7 @@ function doReplayStreams(seekCoef=0) {
 					const streamFps = stream.videoFps || 30 ;
 					seekSeconds = seekIdx / streamFps ;
 					
-					offsetBytes+= stream.offsets[seekIdx]
+					offsetFrames+= seekIdx;
 					break ;
 				}
 			}
@@ -111,13 +111,13 @@ function doReplayStreams(seekCoef=0) {
 						const streamFps = AAC_SAMPLERATE / AAC_SAMPLES_PER_FRAME ;
 						const seekIdx = Math.round(streamFps * seekSeconds) ;
 						stream.seekIdx = seekIdx ;
-						offsetBytes+= stream.offsets[seekIdx]
+						offsetFrames+= seekIdx;
 					}
 				}
 			}
 		}
 		
-		publishPosition({lengthBytes,offsetBytes});
+		publishPosition({lengthFrames,offsetFrames});
 	}
 	
 	//console.log('doReplayStreams') ;
