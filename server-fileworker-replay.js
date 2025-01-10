@@ -279,6 +279,8 @@ async function fetchFrameIdx(streamId,frameIdx) {
 async function runBufferThread(streamId) {
 	streams[streamId].bufferChunks = [] ;
 	const bufferChunks = streams[streamId].bufferChunks ;
+	const bufferLengthMs = 1000 * BUFFER_CHUNK_SIZE / streams[streamId].streamFps,
+		sleepMs = bufferLengthMs / 2 ;
 	while(true) {
 		const {data,isEof} = await fetchNextFrame(streamId) ;
 		if( isEof ) {
@@ -290,7 +292,7 @@ async function runBufferThread(streamId) {
 		}
 		
 		if( bufferChunks.length > BUFFER_CHUNK_SIZE ) {
-			await util_timeout(1000) ;
+			await util_timeout(sleepMs) ;
 		}
 	}
 	return {} ;
