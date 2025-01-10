@@ -72,16 +72,16 @@ class WebaudioProcessor extends AudioWorkletProcessor {
 		
 		//set listener to receive audio data
 		this.port.onmessage = (msg) => {
-			//console.log('filling buffer') ;
 			const interleavingBuffers = msg.data ;
-			//console.dir(interleavingBuffers) ;
 			if( interleavingBuffers.length == 0 ) {
 				this.buffer.clear();
 				return ;
 			}
 			
 			const nbOfSamples = interleavingBuffers[0].length ;
-			
+			if( nbOfSamples*this.outputChannelCount > this.buffer.size() - this.buffer.occupied() ) {
+				//console.log('buffer OVER !!!') ;
+			}
 			for( var i=0 ; i<nbOfSamples ; i++ ) {
 				for( var j=0 ; j<this.outputChannelCount ; j++ ) {
 					const sIdx = i ;
@@ -89,27 +89,16 @@ class WebaudioProcessor extends AudioWorkletProcessor {
 					this.buffer.write(interleavingBuffers[cIdx][sIdx]);
 				}
 			}
-			//console.dir(this.buffer) ;
-			//console.log('end of fill buffer');
+			
+			//console.log('buffer is now '+this.buffer.occupied());
 		}
 	}
 	process(inputs, outputs, parameters) {
-		//console.log('process');
-		// console.log( 'nb of outputs = '+outputs.length ) ;
-		// console.dir( this.buffer ) ;
 		const output = outputs[0];
 		const nbOfSamples = output[0].length ;
 		
-		//console.log( 'size is' + this.buffer.size() ) ;
-		if( this.buffer.occupied() < this.baseSampleSize*this.outputChannelCount ) {
-			// for( var i=0 ; i<nbOfSamples ; i++ ) {
-			// 	for( var j=0 ; j<this.outputChannelCount ; j++ ) {
-			// 		const sIdx = i ;
-			// 		const cIdx = j ;
-			// 		output[cIdx][sIdx] = 0;
-			// 	}
-			// }
-			return true ;
+		if( this.buffer.occupied() < nbOfSamples*this.outputChannelCount ) {
+			//console.log('short!!!!!') ;
 		}
 		
 		for( var i=0 ; i<nbOfSamples ; i++ ) {
