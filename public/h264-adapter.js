@@ -125,6 +125,13 @@ class H264adapter {
 		}
 		//console.log('play delay : '+playDelay) ;
 		
+		if( playDelay > 0 ) {
+			if( playDelay > 0.2 ) {
+				//console.log('JITTER RESYNC ! :'+playDelay) ;
+				this.videoEl.currentTime = buffered.end(0) ;
+			}
+		}
+		
 		/*
 		if( playDelay > 0 ) {
 			const isChrome = this.browserIsChrome ;
