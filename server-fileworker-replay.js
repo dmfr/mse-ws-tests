@@ -84,11 +84,11 @@ function doReplayStreams(seekCoef=0) {
 	if( streamVideo!=null && streamAudio!=null && lengthFrames>0 ) {
 		const audioFps = AAC_SAMPLERATE / AAC_SAMPLES_PER_FRAME ;
 		const videoCalcFps = ( streamVideo.offsets.length ) * audioFps / streamAudio.offsets.length ;
-		console.log('videoCalcFps='+videoCalcFps) ;
+		//console.log('videoCalcFps='+videoCalcFps) ;
 		streamVideo.videoFps = videoCalcFps ;
 	}
 	
-	console.log('lengthFrames is '+lengthFrames) ;
+	//console.log('lengthFrames is '+lengthFrames) ;
 	if( lengthFrames > 0 ) {
 		let offsetFrames = 0 ;
 		

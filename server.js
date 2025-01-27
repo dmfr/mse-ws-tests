@@ -74,7 +74,7 @@ wss.on('connection', function connection(ws) {
 			ws.terminate() ;
 		});
 		worker.on("exit", (code) => {
-			console.log('finished') ;
+			//console.log('finished') ;
 			ws.terminate() ;
 		});
 		ws.targetFileworker = worker ;
@@ -86,11 +86,15 @@ wss.on('connection', function connection(ws) {
 
 	
 	ws.on('close', function() {
-	  clients.delete(ws) ;
+		if( clients.get(ws) ) {
+			const clientId = clients.get(ws).id ;
+			clients.delete(ws) ;
+			console.log('unregister client '+clientId) ;
+		}
 	  if( ws.targetFileworker ) {
 			ws.targetFileworker.terminate() ;
 	  }
-	  console.log('websocket closed!') ;
+	  //console.log('websocket closed!') ;
 	});
 	ws.on('error', function error() {
 		console.log('error websocket') ;
@@ -100,7 +104,7 @@ wss.on('connection', function connection(ws) {
 
 server.on('request',function request(request,response) {
 	const { pathname } = url.parse(request.url);
-	console.log( 'Path is : '+pathname ) ;
+	//console.log( 'Path is : '+pathname ) ;
 	
 	request.addListener('end', function () {
 		if( pathname == '/list/play' ) {
@@ -141,7 +145,7 @@ server.on('request',function request(request,response) {
 		}
 		fileServer.serve(request, response, function (err, res) {
 			if( err ) {
-				console.dir(err) ;
+				//console.dir(err) ;
 			}
 			if (err && (err.status === 404)) { // If the file wasn't found
 					/*
@@ -191,7 +195,7 @@ server.on('upgrade', function upgrade(request, socket, head) {
 			if( !requestServiceId ) {
 				return socket.destroy() ;
 			}
-			console.log('requesting '+requestServiceId) ;
+			//console.log('requesting '+requestServiceId) ;
 			var targetServiceWs = null ;
 			services.forEach( function(meta,ws) {
 				if( meta.id == requestServiceId ) {
@@ -215,7 +219,7 @@ server.on('upgrade', function upgrade(request, socket, head) {
 				return socket.destroy() ;
 			}
 			const seekCoef = (query && query.seek) ? (Math.round(query.seek) / 1000) : 0 ;
-			console.log('requesting '+fileId) ;
+			//console.log('requesting '+fileId) ;
 			
 			const worker = new Worker("./server-fileworker-list.js", {workerData:{fileId:fileId}});
 			worker.on("message", function(message){
