@@ -13,6 +13,8 @@ import h264streamer from './server-lib-h264streamer.js' ;
 const AAC_SAMPLES_PER_FRAME = 1024;
 const AAC_SAMPLERATE = 44100 ; // TODO ?
 
+const TIMER_INTERVAL_MS = 10;
+
 const BUFFER_CHUNK_SIZE = (30 * 3);  // 3sec ?
 
 const USE_BUFFER = true ;
@@ -122,7 +124,7 @@ function doReplayStreams(seekCoef=0) {
 	
 	//console.log('doReplayStreams') ;
 	//console.dir(streams,{'maxArrayLength': null});
-	const firstTs = Date.now() ;
+	const firstTs = Number(process.hrtime.bigint()/BigInt(10**6)) ;
 	streams.forEach( (stream,id) => {
 		fsPromises.open(stream.filepath).then(async (fileHandle) => {
 			stream.fileHandle = fileHandle ;
@@ -132,7 +134,6 @@ function doReplayStreams(seekCoef=0) {
 					stream.mediaReader = new h264reader(fileHandle,h264reader.getVideoFormatFromPath(stream.filepath)) ;
 					streamFps = stream.videoFps || 30 ;
 					stream.streamFps = streamFps ;
-					stream.intervalMs = 1000 * (1/streamFps) ;
 					stream.currentFrameIdx = stream.seekIdx || 0 ;
 					stream.countSent = 0 ;
 					
@@ -144,7 +145,6 @@ function doReplayStreams(seekCoef=0) {
 					stream.mediaReader = new adtsReader(fileHandle) ;
 					streamFps = AAC_SAMPLERATE / AAC_SAMPLES_PER_FRAME ;
 					stream.streamFps = streamFps ;
-					stream.intervalMs = 1000 * (1/streamFps) ;
 					stream.currentFrameIdx = stream.seekIdx || 0 ;
 					stream.countSent = 0 ;
 					break ;
@@ -157,23 +157,11 @@ function doReplayStreams(seekCoef=0) {
 			}
 			stream.firstTs = firstTs;
 			stream.timer = setInterval(() => {
-				let nbFramesToSend = 1 ;
+				const nowTs = Number(process.hrtime.bigint()/BigInt(10**6)) ;
+				const countFramesByTimer = Math.round( (nowTs - stream.firstTs) * stream.streamFps / 1000 ) + 1 ;
+				const nbFramesToSend = countFramesByTimer - stream.countSent ;
+				//console.log( stream.type+' : '+nbFramesToSend ) ;
 				
-				if( (stream.countSent>0) && (stream.countSent % Math.floor(stream.streamFps) == 0) ) {
-					const countFramesByTimer = Math.round( (Date.now() - stream.firstTs) * stream.streamFps / 1000 ) ;
-					const nbFramesToSendByTimer = countFramesByTimer - stream.countSent ;
-					switch( stream.type ) {
-						case 'video' :
-						case 'audio' :
-							if( nbFramesToSendByTimer > 1 ) {
-								nbFramesToSend = nbFramesToSendByTimer ;
-							}
-							break ;
-					}
-				}
-				if( nbFramesToSend != 1 ) {
-					console.log( stream.type+' : '+nbFramesToSend ) ;
-				}
 				stream.countSent += nbFramesToSend ;
 				consumeFrames(id,nbFramesToSend).then( ({isEof}) => {
 					if( isEof ) {
@@ -183,7 +171,7 @@ function doReplayStreams(seekCoef=0) {
 						return ;
 					}
 				}) ;
-			}, stream.intervalMs);
+			}, TIMER_INTERVAL_MS);
 		});
 	});
 }
