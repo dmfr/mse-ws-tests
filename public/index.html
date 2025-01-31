@@ -121,6 +121,15 @@
 				width:100%;
 				height:100%;
 			}
+			.canvascontainer {
+				height: 100% ;
+				position: relative;
+			}
+			.canvascontainer canvas {
+				position: absolute;
+				width:100%;
+				height:100%;
+			}
 			.seekbar {
 				width: 100%;
 				height: 2px;
@@ -135,7 +144,7 @@
 			import H264adapter from './h264-adapter.js' ;
 			import WebcodecAdapter from './webcodec-adapter.js' ;
 			
-			let socket = null, adapter = null, adapterAudio = null;
+			let socket = null, adapter = null, adapterAudio = null, adapterWebcodecs = null;
 			let socketBytes = 0 ;
 			let socketBlobs = [] ;
 			let socketTs = null ;
@@ -152,7 +161,10 @@
 			
 			let _debug ;
 			
+			const USE_VIDEO_WEBCODEC = false ;
 			const USE_AUDIO_WEBCODEC = false ;
+			
+			let canvasCtl, canvasCtx, canvasSized ;
 			
 			function onWindowResize(ev) {
 				console.log('onWindowResize') ;
@@ -284,7 +296,6 @@
 						*/
 						if( typeof event.data === "string" ) {
 							var obj = JSON.parse(event.data) ;
-							console.dir(obj) ;
 							// NOTE: enable seek
 							if( obj.lengthFrames ) {
 								seekFramesLength = obj.lengthFrames ;
@@ -307,6 +318,9 @@
 							}
 							if( adapterAudio ) {
 								adapterAudio.pushData(new Uint8Array(event.data,0)) ;
+							}
+							if( adapterWebcodecs ) {
+								adapterWebcodecs.pushData(new Uint8Array(event.data,0)) ;
 							}
 						}
 					});
@@ -406,6 +420,9 @@
 				if( adapterAudio != null ) {
 					adapterAudio.invalidate() ;
 				}
+				if( adapterWebcodecs != null ) {
+					adapterWebcodecs.invalidate() ;
+				}
 				if( audioContext != null ) {
 					resetWebAudio() ;
 				}
@@ -425,6 +442,10 @@
 				if( adapterAudio != null ) {
 					adapterAudio.terminate() ;
 					adapterAudio = null ;
+				}
+				if( adapterWebcodecs != null ) {
+					adapterWebcodecs.terminate() ;
+					adapterWebcodecs = null ;
 				}
 				if( audioContext != null ) {
 					stopWebAudio() ;
@@ -520,10 +541,22 @@
 				document.body.style.overflow = 'hidden' ;
 				document.getElementById('playerModal').style.display='block';
 				document.getElementById('playerSeekbar').style.display='none';
+				
+				document.getElementsByClassName('videocontainer')[0].style.display = USE_VIDEO_WEBCODEC ? 'none' : 'visible' ;
+				document.getElementsByClassName('canvascontainer')[0].style.display = USE_VIDEO_WEBCODEC ? 'visible' : 'none' ;
+				if( USE_VIDEO_WEBCODEC ) {
+					if( canvasCtl == null ) {
+						canvasCtl = document.getElementById('tag_canvas').transferControlToOffscreen() ;
+						canvasCtx = canvasCtl.getContext('2d') ;
+					}
+					canvasSized = false ;
+				}
 			
 				closeAll() ;
 				
-				adapter = new H264adapter( document.getElementById('tag_video'), videoInfo ) ;
+				if( videoInfo && !USE_VIDEO_WEBCODEC ) {
+					adapter = new H264adapter( document.getElementById('tag_video'), videoInfo ) ;
+				}
 				// adapter.setListenerFn( function(obj) {
 				// 	if( obj.playDelay != null ) {
 				// 		updateCaptionJitter(obj.playDelay) ;
@@ -541,9 +574,21 @@
 						}
 					});
 				}
-				if( videoInfo.audio && USE_AUDIO_WEBCODEC && (webaudioNode!=null) ) {
+				if( (videoInfo && USE_VIDEO_WEBCODEC) || (videoInfo.audio && USE_AUDIO_WEBCODEC) ) {
 					startWebAudio() ;
-					adapterAudio = new WebcodecAdapter( videoInfo, null, (audioData)=>{
+					adapterWebcodecs = new WebcodecAdapter( videoInfo,
+					USE_VIDEO_WEBCODEC ? (videoFrame)=>{
+						if( canvasCtx ) {
+							if( !canvasSized ) {
+								canvasCtl.width = videoFrame.displayWidth;
+								canvasCtl.height = videoFrame.displayHeight;
+								canvasSized = true ;
+							}
+							canvasCtx.drawImage( videoFrame, 0, 0, videoFrame.displayWidth, videoFrame.displayHeight ) ;
+						}
+						videoFrame.close() ;
+					} : null,
+					USE_AUDIO_WEBCODEC ? (audioData)=>{
 						const interleavingBuffers = new Array(audioData.numberOfChannels),
 							transferables = [] ;
 						for (var i = 0; i < interleavingBuffers.length; i++) {
@@ -551,8 +596,10 @@
 							audioData.copyTo(interleavingBuffers[i], { planeIndex: i });
 							transferables.push(interleavingBuffers[i].buffer);
 						}
-						webaudioNode.port.postMessage(interleavingBuffers,transferables);
-					} ) ;
+						if( webaudioNode ) {
+							webaudioNode.port.postMessage(interleavingBuffers,transferables);
+						}
+					} : null ) ;
 				}
 			}
 			function closePlayer() {
@@ -563,7 +610,11 @@
 			
 			function setFullscreen(torf) {
 				if( torf ) {
-					document.getElementsByClassName("videocontainer")[0].requestFullscreen({ navigationUI: "hide" });
+					if( USE_VIDEO_WEBCODEC ) {
+						document.getElementsByClassName("canvascontainer")[0].requestFullscreen({ navigationUI: "hide" });
+					} else {
+						document.getElementsByClassName("videocontainer")[0].requestFullscreen({ navigationUI: "hide" });
+					}
 				} else {
 					document.exitFullscreen();
 				}
@@ -652,6 +703,7 @@
 					</div>
 					<div class="modal-row-body">
 						<div class="modal-cell-body">
+							<div class="canvascontainer"><canvas id='tag_canvas' /></div>
 							<div class="videocontainer"><video id='tag_video' /></div>
 							<div class="audiocontainer"><audio id='tag_audio' /></div>
 						</div>
