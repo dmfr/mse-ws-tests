@@ -38,13 +38,21 @@ class WebcodecAdapter {
 				nextRunningTS: 0,
 				
 				forwardNals: [],
-				dataCb: videodataCb
+					
+				dataCb: null,
+				offscreenCanvas: null,
 			};
 			
 			this.videoWorker = new Worker('webcodec-video-worker.js');
-			this.videoWorker.onmessage = (e) => {
-				this.videoTrack.dataCb(e.data);
-			};
+			if( typeof videodataCb === 'function' ) {
+				this.videoTrack.dataCb = videodataCb ;
+				this.videoWorker.onmessage = (e) => {
+					this.videoTrack.dataCb(e.data);
+				};
+			}
+			if( typeof videodataCb === 'object' && videodataCb instanceof OffscreenCanvas ) {
+				this.videoTrack.offscreenCanvas = videodataCb ;
+			}
 		}
 		if( videoInfo.audio && audiodataCb ) {
 			this.audioTrack = {
@@ -536,11 +544,21 @@ class WebcodecAdapter {
 			3, // VPS + SPS + PPS
 		].concat(hvccVPS).concat(hvccSPS).concat(hvccPPS));
 		
-		this.videoWorker.postMessage({ configure: {
-			codec: this.videoTrack.codec,
-			description:hvcc,
-			//optimizeForLatency: true,
-		}});
+		var postMessageObj = {
+			configure: {
+				codec: this.videoTrack.codec,
+				description:hvcc,
+				//optimizeForLatency: true,
+			},
+			offscreenCanvas: null,
+		};
+		var transferables = [] ;
+		if( this.videoTrack.offscreenCanvas ) {
+			postMessageObj.offscreenCanvas = this.videoTrack.offscreenCanvas;
+			this.videoTrack.offscreenCanvas = null ;
+			transferables.push( postMessageObj.offscreenCanvas ) ;
+		}
+		this.videoWorker.postMessage(postMessageObj,transferables);
 	}
 	
 	videoDecoder_decode() {

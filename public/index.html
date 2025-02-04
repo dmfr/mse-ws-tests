@@ -164,7 +164,6 @@
 			const USE_VIDEO_WEBCODEC = false ;
 			const USE_AUDIO_WEBCODEC = false ;
 			
-			let canvasCtl, canvasCtx, canvasSized ;
 			
 			function onWindowResize(ev) {
 				console.log('onWindowResize') ;
@@ -538,6 +537,8 @@
 			}
 			
 			function openPlayer(videoInfo) {
+				closePlayer() ;
+				
 				document.body.style.overflow = 'hidden' ;
 				document.getElementById('playerModal').style.display='block';
 				document.getElementById('playerSeekbar').style.display='none';
@@ -545,11 +546,10 @@
 				document.getElementsByClassName('videocontainer')[0].style.display = USE_VIDEO_WEBCODEC ? 'none' : 'visible' ;
 				document.getElementsByClassName('canvascontainer')[0].style.display = USE_VIDEO_WEBCODEC ? 'visible' : 'none' ;
 				if( USE_VIDEO_WEBCODEC ) {
-					if( canvasCtl == null ) {
-						canvasCtl = document.getElementById('tag_canvas').transferControlToOffscreen() ;
-						canvasCtx = canvasCtl.getContext('2d') ;
-					}
-					canvasSized = false ;
+					const canvasContainerEl = document.getElementsByClassName("canvascontainer")[0];
+					const canvasEl = document.createElement("canvas");
+					canvasEl.setAttribute("id", "tag_canvas");
+					canvasContainerEl.appendChild(canvasEl);
 				}
 			
 				closeAll() ;
@@ -575,19 +575,10 @@
 					});
 				}
 				if( (videoInfo && USE_VIDEO_WEBCODEC) || (videoInfo.audio && USE_AUDIO_WEBCODEC) ) {
+					const canvasCtl = document.getElementById('tag_canvas').transferControlToOffscreen();
 					startWebAudio() ;
 					adapterWebcodecs = new WebcodecAdapter( videoInfo,
-					USE_VIDEO_WEBCODEC ? (videoFrame)=>{
-						if( canvasCtx ) {
-							if( !canvasSized ) {
-								canvasCtl.width = videoFrame.displayWidth;
-								canvasCtl.height = videoFrame.displayHeight;
-								canvasSized = true ;
-							}
-							canvasCtx.drawImage( videoFrame, 0, 0, videoFrame.displayWidth, videoFrame.displayHeight ) ;
-						}
-						videoFrame.close() ;
-					} : null,
+					USE_VIDEO_WEBCODEC ? canvasCtl : null,
 					USE_AUDIO_WEBCODEC ? (audioData)=>{
 						const interleavingBuffers = new Array(audioData.numberOfChannels),
 							transferables = [] ;
@@ -604,6 +595,12 @@
 			}
 			function closePlayer() {
 				closeAll() ;
+				if( USE_VIDEO_WEBCODEC ) {
+					const canvasEl = document.getElementById('tag_canvas') ;
+					if( canvasEl ) {
+						canvasEl.remove() ;
+					}
+				}
 				document.getElementById('playerModal').style.display='none';
 				document.body.style.overflow = 'auto' ;
 			}
@@ -703,7 +700,7 @@
 					</div>
 					<div class="modal-row-body">
 						<div class="modal-cell-body">
-							<div class="canvascontainer"><canvas id='tag_canvas' /></div>
+							<div class="canvascontainer"></div>
 							<div class="videocontainer"><video id='tag_video' /></div>
 							<div class="audiocontainer"><audio id='tag_audio' /></div>
 						</div>
