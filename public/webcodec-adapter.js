@@ -216,7 +216,7 @@ class WebcodecAdapter {
 			}
 			
 			// get datas for init
-			if( !this.isMP4initialized ) {
+			if( !this.videoTrack.ready ) {
 				switch( objNalu.type ) {
 					case 7 : // SPS
 						var codecarray = objNalu.data.subarray(1, 4);
@@ -241,18 +241,18 @@ class WebcodecAdapter {
 						break ;
 				}
 			}
-			if( !this.isMP4initialized && this.videoTrack.pps && this.videoTrack.sps ) {
+			if( !this.videoTrack.ready && this.videoTrack.pps && this.videoTrack.sps ) {
 				this.videoTrack.ready = true ;
 				// PPS+SPS now in track
 				// => create source + initialize MP4
 				// ==> stop discarding VCL NAL(s)
 				// ===> so next NAL(s) from same message (IDR...) will be queued
-				this.videoDecoder_configureAvc() ; // MOOV
+				this.videoDecoder_configure() ; // MOOV
 				continue ;
 			}
 		}
-		if( this.isMP4initialized ) {
-			this.buildMP4segments() ; // MOOF + MDAT
+		if( this.videoTrack.ready ) {
+			this.videoDecoder_decode() ;
 		}
 		if( hasVCL ) {
 			// this.runningTs += this.H264_timebaseRun ;
@@ -337,7 +337,7 @@ class WebcodecAdapter {
 				// => create source + initialize MP4
 				// ==> stop discarding VCL NAL(s)
 				// ===> so next NAL(s) from same message (IDR...) will be queued
-				this.videoDecoder_configureHevc() ;
+				this.videoDecoder_configure() ;
 				continue ;
 			}
 		}
@@ -457,7 +457,43 @@ class WebcodecAdapter {
 		}
 	}
 	
-	videoDecoder_configureHevc() {
+	videoDecoder_configure_getAvcDesc() {
+		var track = this.videoTrack ;
+		
+		var sps = [], pps = [], i, data, len;
+		
+		// assemble the SPSs
+		for (i = 0; i < track.sps.length; i++) {
+			data = track.sps[i];
+			len = data.byteLength;
+			sps.push((len >>> 8) & 0xFF);
+			sps.push((len & 0xFF));
+			sps = sps.concat(Array.prototype.slice.call(data)); // SPS
+		}
+
+		// assemble the PPSs
+		for (i = 0; i < track.pps.length; i++) {
+			data = track.pps[i];
+			len = data.byteLength;
+			pps.push((len >>> 8) & 0xFF);
+			pps.push((len & 0xFF));
+			pps = pps.concat(Array.prototype.slice.call(data));
+		}
+
+		var avcc = new Uint8Array([
+					0x01,   // version
+					sps[3], // profile
+					sps[4], // profile compat
+					sps[5], // level
+					0xfc | 3, // lengthSizeMinusOne, hard-coded to 4 bytes
+					0xE0 | track.sps.length // 3bit reserved (111) + numOfSequenceParameterSets
+				].concat(sps).concat([
+					track.pps.length // numOfPictureParameterSets
+				]).concat(pps)); // "PPS"
+		//console.log('avcc:' + Hex.hexDump(avcc));
+		return avcc;
+	}
+	videoDecoder_configure_getHevcDesc() {
 		var track = this.videoTrack ;
 		var hvccVPS = [
 			1 << 7 | 32 & 0x3f,
@@ -543,11 +579,24 @@ class WebcodecAdapter {
 			/* unsigned int(8) numOfArrays; */
 			3, // VPS + SPS + PPS
 		].concat(hvccVPS).concat(hvccSPS).concat(hvccPPS));
-		
+		return hvcc;
+	}
+	videoDecoder_configure() {
+		let mp4desc ;
+		switch( this.videoFormat ) {
+			case 'hevc' :
+				mp4desc = this.videoDecoder_configure_getHevcDesc() ;
+				break ;
+			case 'avc' :
+				mp4desc = this.videoDecoder_configure_getAvcDesc() ;
+				break ;
+			default:
+				return;
+		}
 		var postMessageObj = {
 			configure: {
 				codec: this.videoTrack.codec,
-				description:hvcc,
+				description:mp4desc,
 				//optimizeForLatency: true,
 			},
 			offscreenCanvas: null,
