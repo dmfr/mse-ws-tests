@@ -70,7 +70,7 @@
 				margin: 20px 40px;
 				border: 1px solid #888;
 				width: calc(100vw - 100px);
-				height: calc(100vh - 60px);
+				height: calc(100vh - 100px);
 				padding: 10px;
 				display: table;
 			}
@@ -468,7 +468,7 @@
 			function updateCaption() {
 				var str, str2 ;
 				if( socket ) {
-					const nowTs= Date.now() ;
+					const nowTs= Math.round(performance.now()) ;
 					let clockMs ;
 					if( socketTs == null ) {
 						socketTs = nowTs ;
