@@ -127,8 +127,8 @@
 			}
 			.canvascontainer canvas {
 				position: absolute;
-				width:100%;
-				height:100%;
+				/*width:100%;*/
+				/*height:100%;*/
 			}
 			.seekbar {
 				width: 100%;
@@ -169,6 +169,7 @@
 				console.log('onWindowResize') ;
 				//console.dir(arguments) ;
 				//setVideoSize() ;
+				setCanvasSize() ;
 			}
 			function setVideoSize(ev) {
 				let v = document.getElementById("tag_video");
@@ -178,6 +179,24 @@
 				let targetHeight = v.offsetWidth / aspectRatio ;
 				v.style.height = targetHeight / 2 ;
 				console.log('setting height to '+targetHeight) ;
+			}
+			function setCanvasSize() {
+				const canvasEl = document.getElementById('tag_canvas') ;
+				if( !canvasEl ) {
+					return ;
+				}
+				const containerSize = document.getElementsByClassName('canvascontainer')[0].getBoundingClientRect();
+				const videoSize = adapterWebcodecs.getVideoSize();
+				
+				const targetWidth = Math.min(containerSize.width, containerSize.height * videoSize.width / videoSize.height);
+				const targetHeight = Math.min(containerSize.height, containerSize.width * videoSize.height / videoSize.width);
+				canvasEl.style.width = targetWidth+'px';
+				canvasEl.style.height = targetHeight+'px';
+				
+				const targetLeft = Math.max(0,containerSize.width-targetWidth) / 2 ;
+				const targetTop = Math.max(0,containerSize.height-targetHeight) / 2 ;
+				canvasEl.style.left = targetLeft+'px';
+				canvasEl.style.top = targetTop+'px';
 			}
 			function testWs(event) {
 				console.log('testWs') ;
@@ -594,6 +613,11 @@
 							webaudioNode.port.postMessage(interleavingBuffers,transferables);
 						}
 					} : null ) ;
+					adapterWebcodecs.setListenerFn( function(obj) {
+						if( obj.size != null ) {
+							setCanvasSize();
+						}
+					});
 				}
 			}
 			function closePlayer() {

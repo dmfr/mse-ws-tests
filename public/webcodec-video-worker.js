@@ -1,12 +1,15 @@
 let videoDecoder = null ;
-let offscreenCanvas = null, offscreenCanvasContext = null ;
+let offscreenCanvas = null, offscreenCanvasContext = null, offscreenCanvasSized ;
 
 function onDecoderOutput(videoFrame) {
 	//console.dir(videoFrame) ;
 	//videoFrame.close() ;
 	if( offscreenCanvas ) {
-		offscreenCanvas.width = videoFrame.displayWidth;
-		offscreenCanvas.height = videoFrame.displayHeight
+		if( !offscreenCanvasSized ) {
+			offscreenCanvas.width = videoFrame.displayWidth;
+			offscreenCanvas.height = videoFrame.displayHeight;
+			offscreenCanvasSized = true;
+		}
 		offscreenCanvasContext.drawImage( videoFrame, 0, 0, videoFrame.displayWidth, videoFrame.displayHeight ) ;
 		videoFrame.close();
 		return ;
@@ -29,6 +32,12 @@ self.onmessage = (event) => {
 			offscreenCanvasContext = offscreenCanvas.getContext('2d') ;
 		}
 		videoDecoder.configure(dataObj.configure);
+		offscreenCanvasSized = false;
+		if( offscreenCanvas && dataObj.hasOwnProperty('size') ) {
+			offscreenCanvas.width = dataObj.size.width;
+			offscreenCanvas.height = dataObj.size.height;
+			offscreenCanvasSized = true;
+		}
 	}
 	if( dataObj.hasOwnProperty('decode') ) {
 		var decodeObj = dataObj.decode ;

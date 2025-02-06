@@ -599,6 +599,10 @@ class WebcodecAdapter {
 				description:mp4desc,
 				//optimizeForLatency: true,
 			},
+			size: {
+				width: this.videoTrack.width,
+				height: this.videoTrack.height,
+			},
 			offscreenCanvas: null,
 		};
 		var transferables = [] ;
@@ -608,6 +612,9 @@ class WebcodecAdapter {
 			transferables.push( postMessageObj.offscreenCanvas ) ;
 		}
 		this.videoWorker.postMessage(postMessageObj,transferables);
+		if( this._listenerFn ) {
+			this._listenerFn( {size:postMessageObj.size} ) ;
+		}
 	}
 	
 	videoDecoder_decode() {
@@ -640,5 +647,14 @@ class WebcodecAdapter {
 		this.videoTrack.forwardNals=[] ;
 	}
 	
+	getVideoSize() {
+		if( !this.videoTrack || !this.videoTrack.ready ) {
+			return null;
+		}
+		return {
+			width: this.videoTrack.width,
+			height: this.videoTrack.height,
+		};
+	}
 }
 export default WebcodecAdapter ;
