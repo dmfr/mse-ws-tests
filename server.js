@@ -374,10 +374,10 @@ function registerService(ws) {
 			}
 		});
 		if( (dataType=='video') && ws.writeStreamVideo ) {
-			ws.hasVideo = true ;
+			ws.videoEnabled = true ;
 			ws.writeStreamVideo.write(data) ;
 		}
-		if( (dataType=='audio') && ws.writeStreamAudio && ws.hasVideo ) {
+		if( (dataType=='audio') && ws.writeStreamAudio ) {
 			ws.audioEnabled = true ;
 			ws.writeStreamAudio.write(data) ;
 		}
