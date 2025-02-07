@@ -124,7 +124,7 @@ function doReplayStreams(seekCoef=0) {
 	
 	//console.log('doReplayStreams') ;
 	//console.dir(streams,{'maxArrayLength': null});
-	const firstTs = Number(process.hrtime.bigint()/BigInt(10**6)) ;
+	const firstTs = Number(process.hrtime.bigint()/BigInt(10**6)) + 100 ;
 	streams.forEach( (stream,id) => {
 		fsPromises.open(stream.filepath).then(async (fileHandle) => {
 			stream.fileHandle = fileHandle ;
@@ -160,6 +160,9 @@ function doReplayStreams(seekCoef=0) {
 				const nowTs = Number(process.hrtime.bigint()/BigInt(10**6)) ;
 				const countFramesByTimer = Math.round( (nowTs - stream.firstTs) * stream.streamFps / 1000 ) + 1 ;
 				const nbFramesToSend = countFramesByTimer - stream.countSent ;
+				if( nbFramesToSend < 1 ) {
+					return ;
+				}
 				//console.log( stream.type+' : '+nbFramesToSend ) ;
 				
 				stream.countSent += nbFramesToSend ;
