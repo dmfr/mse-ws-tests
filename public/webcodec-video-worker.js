@@ -29,7 +29,7 @@ self.onmessage = (event) => {
 		}) ;
 		if( dataObj.offscreenCanvas ) {
 			offscreenCanvas = dataObj.offscreenCanvas ;
-			offscreenCanvasContext = offscreenCanvas.getContext('2d') ;
+			offscreenCanvasContext = offscreenCanvas.getContext('2d',{alpha:false}) ;
 		}
 		videoDecoder.configure(dataObj.configure);
 		offscreenCanvasSized = false;
