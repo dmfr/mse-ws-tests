@@ -164,6 +164,8 @@
 			const USE_VIDEO_WEBCODEC = false ;
 			const USE_AUDIO_WEBCODEC = false ;
 			
+			let wakeLock ;
+			
 			
 			function onWindowResize(ev) {
 				console.log('onWindowResize') ;
@@ -569,6 +571,10 @@
 					const canvasEl = document.createElement("canvas");
 					canvasEl.setAttribute("id", "tag_canvas");
 					canvasContainerEl.appendChild(canvasEl);
+					
+					if( !wakeLock ) {
+						navigator.wakeLock.request().then( (wl) => { wakeLock=wl } ) ;
+					}
 				}
 			
 				closeAll() ;
@@ -627,6 +633,11 @@
 					if( canvasEl ) {
 						canvasEl.remove() ;
 					}
+				}
+				if( wakeLock ) {
+					wakeLock.release().then(() => {
+						wakeLock = null;
+					});
 				}
 				document.getElementById('playerModal').style.display='none';
 				document.body.style.overflow = 'auto' ;
